@@ -1,0 +1,424 @@
+\input ../6001mac
+
+\newcommand{\Code}[1]{\mbox{\tt #1}}
+
+\begin{document}
+
+\psetheader{Sample Problem Set}{Evaluators}
+\begin{center}\large
+{\bf Scheme Evaluators}
+\end{center}
+
+\bigskip
+
+You will be working with evaluators as described in Chapter 4 of the
+notes.  If you don't have a good understanding of how the evaluators are
+structured, it is very easy to become confused between the programs that
+the evaluator is interpreting, the procedures that implement the evaluator
+itself, and Scheme procedures called by the evaluator.  You will need to
+have carefully studied Chapter 4 through subsection 4.2.2 in order to do
+this assignment.
+
+To help you focus on some of the important ideas in the Notes, we ask you
+to prepare:
+
+\section{Using the Evaluators}
+
+The code for this problem set includes these files:
+\begin{itemize}
+
+\item {\tt meval.scm} is the metacircular evaluator described in
+section 4.1.1 of the notes.  It has been extended to allow declarations of
+lazy procedure parameters, as described in section 4.2 and exercise 4.25.
+In order to avoid confusing the {\tt eval} and {\tt apply} of this
+evaluator with the {\tt eval} and {\tt apply} of the underlying Scheme
+system, we have renamed these procedures {\tt meval} and {\tt m-apply}.
+
+\item {\tt analyze.scm} is the {\tt analyze} evaluator of section 4.1.6,
+extended to allow declarations of lazy procedure parameters, as described
+in section 4.2 and exercise 4.25.
+
+\item {\tt evdata.scm} contains the procedures that define the evaluator's
+data structures, as in section 4.1.3.  In order to interface the evaluator
+to the underlying Scheme system, we have made the modification outlined in
+exercise 4.14.  Namely, any variable that is not found in the evaluator's
+global environment will be looked up in the underlying Scheme; Scheme
+procedures found in this way will treated by the evaluator as primitive
+procedures.  Programs being executed by the metacircular evaluator can
+therefore make use of any procedure (primitive or compound) which may be
+defined in your Scheme environment.
+
+\item {\tt syntax.scm} contains the procedures that define the syntax of
+expressions, as described in section 4.1.2.
+
+\end{itemize}
+
+You'll be switching back and forth between both of these evaluators.  The
+two evaluators use the same implementation of environment data structures.
+This arrangement requires that you reinitialize the evaluator's environment
+when you switch from one to the other.  Here's how to manage this:
+\begin{itemize}
+
+\item
+To start up, load the files {\tt syntax.scm}, {\tt evdata.scm},
+{\tt meval.scm}, and {\tt analyze.scm}.  Then evaluate
+\Code{(start-meval)} in Scheme; this starts the read-eval-print loop
+for the meta-circular evaluator with a freshly initialized global
+environment.
+
+To evaluate an expression, you may type the expression into the
+\Code{*scheme*} buffer followed by {\tt ctrl-x ctrl-e}.  (Don't use
+{\tt M-z} to evaluate the expression in the \Code{*scheme*}
+buffer---the presence of the evaluator prompts confuses the {\tt M-z}
+mechanism.  But {\tt M-z} works fine for sending expressions to the
+\Code{*scheme*} buffer from other Scheme-mode buffers.)
+
+We've arranged that each read-eval-print loop identifies itself by its
+input and output prompts.  For example,
+
+\beginlisp
+MEVAL=> (+ 3 4)
+;;M-value: 7
+\endlisp
+shows an interaction with the {\tt meval} evaluator.
+
+\item
+You should keep in a separate file any procedure definitions you want to
+install in an evaluator.  If your Edwin Scheme buffer is running the
+read-eval-print loop of an evaluator, you can then visit this definitions
+file and type {\tt M-o} to enter the definitions into the evaluator.  To
+get you started, we have included an alternative implementation of lazy
+lists in the buffer {\tt ps8defs.scm}.
+
+\item You can interrupt an evaluator by typing {\tt ctrl-c ctrl-c}.
+To restart it with the recent definitions still intact, evaluate {\tt
+(eval-loop)}.
+
+\item To start a read-eval-print loop for the analyzing evaluator in a
+fresh global environment, return to Scheme and evaluate {\tt
+(start-analyze)}.
+
+\item The evaluators you are working with do not include error
+systems.  If you hit an error you will bounce back into ordinary
+Scheme.  You can restart the current evaluator, with its global
+environment still intact, by evaluating {\tt (eval-loop)}.
+
+\item The variable {\tt current-evaluator} is defined as an alias for
+the current evaluator in each of the files {\tt meval.scm} and {\tt
+analyze.scm}.  This should ensure that {\tt current-evaluator} will be
+bound to the most recently started evaluator at all times during your
+lab session.
+
+\item It can be instructive to trace {\tt current-evaluator}, {\tt
+m-apply}, and/or {\tt exapply} during evaluator executions.  (You will
+also probably need to do this while debugging your code for this
+assignment.)
+
+\item  Since environments are generally complex, circular list
+structures, we have set Scheme's printer so that it will not go into
+an infinite loop when asked to print a circular list.  This was done by
+\beginlisp
+(set! *unparser-list-depth-limit* 7)
+(set! *unparser-list-breadth-limit* 10)
+\endlisp
+at the end of the file {\tt evdata.scm}.  You may want to alter the
+values of these limits to vary how much list structure will be printed as
+output.
+
+\end{itemize}
+
+\section{Exercises}
+
+\paragraph{Lab exercise 1A:}
+Start the \Code{meval} evaluator and evaluate a few simple expressions
+and definitions.  It's a good idea to make an intentional error and
+practice restarting the read-eval-print loop.  Notice that we have
+already installed {\tt let} in the evaluator, so you can use this in
+your programs.
+
+\paragraph{Lab exercise 1B:}
+Now start the analyzing evaluator.  You can tell that you are typing
+at the analyzing evaluator because the prompt will be {\tt AEVAL=>}
+rather than {\tt MEVAL=>}.  Now once again evaluate a few simple
+expressions and definitions.
+
+\paragraph{Lab exercise 1C:}
+Start the meta-circular evaluator again.  Now trace evaluation of the
+application of some simple procedure to some argument.
+
+\medskip
+
+Ben Bitdiddle thinks it is silly to reinitialize the environment every
+time he switches from one evaluator to the other.  So, after having
+run the meta-circular evaluator, he revises the \Code{start-analyze}
+procedure so it does not reinitialize the global environment:
+
+\beginlisp
+(define (start-analyze)
+  (set! current-evaluator (lambda (exp env) ((analyze exp) env)))
+  (set! current-prompt "AEVAL=> ")
+  (set! current-value-label ";;A-value: ")
+;  (init-env)              ;Ben comments-out this line
+  (eval-loop))
+\endlisp
+
+He reasons that now, if he types \Code{(start-analyze)}, the
+definitions he already evaluated in the meta-circular evaluator will
+be available to the analyzing evaluator.  Eva Lu Ator agrees that the
+definitions of the meta-circular evaluator will indeed be available to
+the analyzing evaluator, but that this will usually crash the system
+rather then being helpful.
+
+\paragraph{Lab exercise 2A:}
+Try Ben's suggestion and observe what Eva Lu Ator meant.
+
+\paragraph{Post-Lab exercise 2B:}
+Briefly, but clearly, explain what goes wrong with Ben's suggestion.
+Are there any definitions it would be safe to preserve when switching
+between evaluators?
+
+\subsection{Comparing evaluation speeds}
+
+This next problem asks you to demonstrate the improved efficiency of
+the analyzing evaluator over the meta-circular one.
+
+To time things, you can use the procedure {\tt show-time}, which you used
+in Problem Set 2.  Thus, for example, you can find out how long it takes
+the evaluator to evaluate {\tt (fib 10)} by quitting out of the evaluator
+and evaluating
+
+\beginlisp
+(show-time (lambda() (current-evaluator '(fib 10) the-global-environment)))
+\endlisp
+in Scheme.  Be careful to define the procedure you are timing, e.g., {\tt
+fib}, in the evaluator, not in ordinary Scheme!  Otherwise, you'll end up
+timing the underlying Scheme interpreter.  This is because of the way
+we've linked the evaluator into Scheme: if you define {\tt fib} in Scheme,
+and not in the evaluator's global environment, {\tt lookup-variable-value}
+will find the Scheme procedure {\tt fib} and {\tt m-apply} will treat this
+as a primitive.
+
+\paragraph{Lab exercise 3A:} Design and carry out an experiment to
+compare the speeds of the {\tt meval} and {\tt analyze} evaluators on some
+procedures.  Use tests that run for a reasonable amount of time (say 10 or
+20 seconds).  It may be helpful to use test procedures for which small
+changes in the input cause large changes in running time, so you can
+rapidly increase the time by increasing the input.
+
+Summarize what you observe about the relative speeds of the two evaluators
+on your test programs.
+
+\paragraph{Lab exercise 3B (Optional---Extra Credit):}
+See if you can find an example where the interpreters run for at least
+five seconds and the {\tt analyze} evaluator runs {\em no more} than 1.5
+times the speed of {\tt meval}.
+
+\subsection{Adding Language Constructs}
+
+\paragraph{Pre-Lab exercise 4A:}
+
+Lazy parameter declarations are already supported by both the \Code{meval}
+and \Code{analyze} evaluators supplied to you.  Suppose we are given some
+{\em fixed} $n \geq 0$.  With lazy parameters, it is possible to define
+within an evaluator an $n$-argument {\em procedure}, {\tt and-proc}, that
+yields the same results as the Scheme special form \Code{and} when it is
+used with $n$ subforms.  That is, \Code{(and $E_1$ \ldots $E_n$)} in
+Scheme, and
+\Code{(and-proc $E_1$ \ldots $E_n$)} in an evaluator, should produce exactly the
+same results (including side-effects) for any expressions $E_1 \ldots
+E_n$.  Outline how to define the $n$-argument \Code{and-proc} within our
+evaluators.
+
+\paragraph{Lab exercise 4B:}
+Evaluate the definition of a three-argument {\tt and-proc} in both the
+\Code{meval} and \Code{analyze} evaluators.
+
+\paragraph{Lab exercise 5:}
+Since our evaluators do not yet have the ability to define procedures with
+varying numbers of arguments, we can't add the general {\tt and} construct
+with the approach of Exercise 4.  So instead, add {\tt and} as a special
+form to one of the evaluators (you may choose either one, but see exercise
+7A below before you make the choice).
+
+\medskip
+
+We can also extend the evaluators to handle Scheme's convention
+for defining procedures with varying numbers of arguments.  For
+example, an abstraction of the form \Code{(lambda (x y . z) \ldots)}
+defines a procedure of two or more arguments, in which the value of
+the first argument would be bound to \Code{x}, the value of the second
+to \Code{y}, and a list consisting of the values of any further
+arguments would be bound to \Code{z}.  If, instead of \Code{z}, we had
+\Code{(w lazy)}, then a list consisting of the {\em delayed} values of
+any further arguments would be bound to \Code{w}.  Similarly, if \Code{(w
+lazy-memo)} appears instead of z, this indicates that a list consisting of
+the memoized delayed values of any further arguments would be bound to
+\Code{w}.
+
+We accomplish the extension by modifying the procedure
+\Code{process-arg-procs} in the file {\tt evdata.scm}\footnote{The
+procedure \Code{parameter-names} in {\tt syntax.scm} must also be written
+to handle the dotted-pair form of parameters, but we have done this
+already.}.  As written, \Code{(process-arg-procs params aprocs env)}
+expects \Code{params} and \Code{aprocs} to be {\em lists} of equal length,
+and it returns a list of parameter values of the same length.  If
+\Code{params} is not a list of parameter declarations, but instead ends
+with a dotted pair of parameters, then we want \Code{process-arg-procs} to
+return a list of values in which the last value is itself a list of all
+the "extra" values, possibly all delayed or all memoized depending on
+whether the final parameter is declared to be lazy or memoized.  For
+example,
+
+\beginlisp
+((lambda (x y . (w lazy)) (list x y (car w)))
+ 1  2  (if \#t 3 4)  (print "this should not print"))
+\endlisp
+will return \Code{(1 2 3)}, without printing anything.  This is because in
+the application, the variable \Code{x} will be bound to 1, variable
+\Code{y} will be bound to 2, and variable \Code{w} will be bound to the
+list consisting of the delayed values of
+\beginlisp(if \#t 3 4)\endlisp
+and
+\beginlisp(print "this should not print").\endlisp
+The first delayed value gets forced when the primitive procedure
+\Code{list} is applied to it.  The second delayed value is not ever
+forced, so no printing occurs.
+
+So we revise \Code{process-arg-procs} to reformat its arguments if
+necessary, after which it proceeds as before:
+
+\beginlisp
+(define (process-arg-procs params aprocs env)
+  (let ((params (undot params))
+        (aprocs (matchup-args params aprocs)))
+    (map (lambda (param aproc)
+           (cond ((variable? param) (aproc env))
+                 ((lazy? param) (delay-it aproc env))
+                 ((memo? param) (delay-it-memo aproc env))
+                 (else (error "Unknown declaration" param))))
+         params
+         aprocs)))
+\endlisp
+
+The procedure \Code{matchup-args} has the task of taking the list of
+arguments and returning the list with all the "extra" arguments put
+into a single list at the end.  But at this point each argument in the
+input list is actually packaged as an "argument procedure."  The
+argument procedure will yield the argument value when it is applied to
+the environment.  So \Code{matchup-args} actually has to create a
+similar package which yields the list of extra argument values when it
+is applied to the environment.
+
+\beginlisp
+(define (matchup-args params aprocs)
+  (cond
+   ((null? params)
+    (if (null? aprocs) '() (error "matchup-args: too many args" aprocs)))
+   ((variable? params)
+    (list
+     (lambda (env)
+       (map (lambda (aproc) (aproc env)) aprocs))))
+   ((lazy? params)
+    (list
+     (lambda (env)
+       (map (lambda (aproc) (delay-it aproc env)) aprocs))))
+   ((memo? params)
+    (list
+     (lambda (env)
+       (map (lambda (aproc) (delay-it-memo aproc env)) aprocs))))
+   ((null? aprocs) (error "matchup-args: too few args" params))
+   (else (cons
+          (car aprocs)
+          (matchup-args (cdr params) (cdr aprocs))))))
+\endlisp
+
+\medskip
+\beginlisp
+(define (undot params)
+  <blob6a>)
+\endlisp
+
+
+\paragraph{Lab exercise 6A:}
+Complete the definition of \Code{<blob6a>}, insert these definitions in
+the file {\tt evdata.scm} and reload the file into Scheme.  You will find
+a copy of the above definitions in buffer \Code{ps8-ans.scm}.
+
+\paragraph{Lab exercise 6B:}
+Now we can add, as a procedure, a genuine {\tt and} construct to the
+evaluators.  Namely,
+
+\beginlisp
+(define and (lambda (l lazy) (and-lproc l)))
+\endlisp
+
+where {\tt and-lproc} is a procedure that takes as its argument a single
+list\footnote{Both \Code{lazy} and \Code{lazy-memo} are now specified to
+be keywords.  This prevents misreading \Code{(lambda (l lazy) \ldots)} as
+a procedure with two formals, \Code{l} and \Code{lazy}.  Rather, it is a
+procedure which may be applied to zero or more arguments---all of which
+will be delayed.} of delayed values. Give the definition of {\tt
+and-lproc}.
+
+\medskip
+
+Even with lazy and varying numbers of parameters, not all language
+facilities can be defined as Scheme procedures.  An example is the
+special form {\tt (for-list <var> <l> <body>)} where \Code{<var>} is a
+variable and the value of {\tt <l>} is a list.  Evaluation of this
+expression causes \Code{<body>} to be repeatedly evaluated as {\tt
+<var>} is successively assigned to be the elements of the value of
+{\tt <l>}.  More precisely, {\tt (for-list <var> <l> <body>)} is
+syntactic sugar for\footnote{We're assuming that the local variables
+\Code{iter} and \Code{rest-l} are not \Code{eq?} to \Code{<var>} or
+any variable free in \Code{<body>}.}
+
+\beginlisp
+(let (rest-l <l>))
+  (define (iter)
+    (if (null? rest-l)
+        the-unspecified-value
+        (begin
+          (set! <var> (car rest-l))
+          <body>
+          (set! rest-l (cdr rest-l))
+          (iter))))
+  (iter))
+\endlisp
+
+\paragraph{Lab exercise 7A:}
+Add the {\tt for-list} construct as a special form ({\em not} as syntactic
+sugar like {\tt let} or {\tt cond}) to whichever evaluator you did {\em not}
+choose in exercise 4.
+
+\paragraph{Lab exercise 7B:}
+Exhibit a \Code{<body>} for which {\tt (for-list x '(1 2) <body>)}
+does not have the same behavior as {\tt (map (lambda (x) >body>) '(1
+2))}.
+
+
+\paragraph{Lab and Post-Lab exercise 8 (Optional):}
+The evaluators are not quite powerful enough to evaluate themselves.  That
+is, it doesn't quite work to evaluate all the \Code{meval} definition
+files within the \Code{MEVAL} read-eval-print loop, and then to apply
+\Code{meval} as a procedure defined {\em within} the \Code{MEVAL}
+evaluator.  You may want to try this to see what happens.
+
+Discuss what further features or definitions would be required in order to
+successfully run the evaluators within themselves and/or within each other.
+
+\iffalse
+\paragraph{Lab and Post-Lab exercise 9 (Optional):}
+Ben Bitdiddle's idea from exercise 2 of having both evaluators share
+the same environment---so that definitions evaluated in either evaluator
+would be available and run correctly in the other---can be made to work.
+It requires only a slight modification in the way that the \Code{meval}
+evaluator represents procedure objects.  The modification is already
+suggested in the \Code{value-procs} procedure in {\tt meval.scm}, which
+enabled the two evaluators to use the same parameter declaration and
+environment structures.  Explain more fully how to make Ben's idea work.
+Do it if you have time.
+\fi
+
+\end{document}
+

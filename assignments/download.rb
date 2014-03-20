@@ -13,7 +13,7 @@ end
 def intro_text(page)
   text = page.search('blockquote').text
   i = text.index('Files for download')
-  text[0...i].squeeze("\n")
+  text[0...i].sub(/^\n+/, '').gsub(/\n\n+/, "\n\n")
 end
 
 def write_file(name, content)
@@ -27,7 +27,7 @@ page = agent.get 'http://mitpress.mit.edu/sicp/psets/'
 links = page.search('table tr td a')
 
 links.each_with_index do |link, i|
-  folder = "#{i}.".rjust(3, '0') + folder_name(link)
+  folder = "#{i + 1}.".rjust(3, '0') + folder_name(link)
   `mkdir -p #{folder}`
   Dir.chdir(folder) do
     subpage = agent.click link
@@ -42,4 +42,3 @@ links.each_with_index do |link, i|
     agent.back
   end
 end
-

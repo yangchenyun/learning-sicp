@@ -1,0 +1,418 @@
+% Document Type: LaTeX
+% Master File: lec-inherit.tex
+\input ../6001mac
+
+\begin{document}
+
+\psetheader{Sample Problem Set}{Notes for Game Problem Set}
+
+
+\vskip 10pt
+
+\centerline{Object-Oriented Programming}
+
+\medskip
+
+{\bf Two different kinds of models}
+
+Functional models:
+
+\begin{itemize}
+
+\item     Variables stand for values.
+
+\item     A compound structure is determined by its parts: Two compound
+structures with the same parts are the same.
+
+\end{itemize}
+
+Object models:
+
+\begin{itemize}
+
+\item    Variables stand for places whose contents can change.
+
+\item     Compound structures are not determined by their parts, but
+rather by their ``identity''. 
+
+\end{itemize}
+
+In Lisp, we say that two symbols are identical ({\tt eq?}) if they
+print the same.  But we stipulate that every call to {\tt cons}
+returns a new cell with its unique identity.
+
+
+\vskip 20pt
+
+
+{\bf Inventing a simple object-oriented programming language}
+
+These notes are more extensive than usual because this material is not covered in the textbook.
+
+The beginning of this language is simply a set of conventions for using
+computational objects.  ({\it Warning:}  We will initially show you an
+implementation that has a bug and then show how to fix the bug below.
+The structure of this system follows that given by J. Rees and N. Adams,
+``Object-oriented programming in Scheme,'' in the {\it 1988 ACM Conference
+on Lisp and Functional Programming.})
+
+An {\it  object}  is a procedure that, given a {\it message}  as
+argument, returns another procedure called a method.  
+
+\beginlisp
+(define (get-method object message)
+  (object message))
+\endlisp
+
+For example, the following procedure creates a simple object called a
+speaker whose only method is that it can {\it  say} something (a list), 
+which it does by printing the list:  
+
+\beginlisp
+(define (make-speaker)
+  (define (self message)
+    (cond ((eq? message 'say)
+           (lambda (stuff) (display stuff)))
+          (else (no-method "SPEAKER"))))
+  self)
+\endlisp
+        
+Notice that the object refers to itself as {\tt self}. We'll  make the
+convention that if an object does not recognize the message it will
+signal this by using {\tt  no-method}, which returns something that our
+object-oriented programming system will recognize.  
+
+\beginlisp                                              
+(define (no-method name)
+  (list 'no-method name))
+\null
+(define (no-method? x)
+  (if (pair? x)
+      (eq? (car x) 'no-method)
+      false))
+\null
+(define (method? x)
+  (not (no-method? x)))
+\endlisp
+
+
+To ask  an object to apply a method to some arguments, we send the
+object a message asking for the appropriate method, and apply the method
+to the arguments.  If the object has no method for this message,  {\tt
+ask} will produce an error.  (The procedure {\tt apply} takes a
+procedure and a list of arguments and applies the procedure to the
+arguments.  Note the use of dot notation, so  that {\tt args} will be a list
+of the arguments.)   
+
+\beginlisp
+(define (ask object message . args)
+  (let ((method (get-method object message)))
+    (if (method? method)
+        (apply method args)
+        (error "No method" message (cadr method)))))
+\endlisp
+
+Now we can make a speaker object and ask it to say something:
+
+\beginlisp
+(define george (make-speaker))
+(ask george 'say '(the sky is blue))
+(THE SKY IS BLUE)
+\endlisp
+
+One thing we may want to do is define an object type to be {\it a kind
+of} some other object type.  For instance, we could say that a lecturer
+is a kind of speaker, expect that the lecturer also has a method called
+lecture.  To lecture something, the lecturer says it and then says ``You
+should be taking notes'':   
+
+\beginlisp
+(define (make-lecturer)
+  (let ((speaker (make-speaker)))
+    (define (self message)
+      (cond ((eq? message 'lecture)
+             (lambda (stuff)
+               (ask self 'say stuff)
+               (ask self 'say '(you should be taking notes))))
+            (else (get-method speaker message))))
+    self))
+\endlisp
+
+Observe that we accomplish this by giving the lecturer an internal
+speaker of its own. If the message is not {\tt lecture}, then lecturer
+passes the message on
+to the internal speaker.  Thus, a lecturer can do anything a speaker can
+(i.e., say things) , and also lecture.  In the object-oriented
+programming jargon, one says that {\tt  lecturer}  {\it inherits} the
+{\tt say}  method from {\tt speaker,} or that {\tt speaker} is a {\it 
+superclass}  of {\tt  lecturer.}
+
+\beginlisp
+(define Gerry (make-lecturer))
+(ask Gerry 'say '(the sky is blue))
+(THE SKY IS BLUE)
+\null
+(ask Gerry 'lecture '(the sky is blue))
+(THE SKY IS BLUE)
+(YOU SHOULD BE TAKING NOTES)
+\endlisp
+
+
+{\bf Noticing a bug}
+
+The next example will reveal the bug in our simple implementation:
+
+Let's define an {\tt arrogant-lecturer} to be a kind of lecturer.  But
+whenever an arrogant lecturer says anything, she or he prefaces it
+with ``It is obvious that ...''  and then says it as an ordinary
+lecturer would:
+
+\beginlisp
+(define (make-arrogant-lecturer)
+  (let ((lecturer (make-lecturer)))
+    (define (self message)
+      (cond ((eq? message 'say)
+             (lambda (stuff)
+               (ask lecturer 'say (append '(it is obvious that) stuff))))
+            (else (get-method lecturer message))))
+    self))
+\null
+(define Albert (make-arrogant-lecturer))
+\null
+(ask Albert 'say '(the sky is blue))
+(IT IS OBVIOUS THAT THE SKY IS BLUE)
+\endlisp
+
+Albert here says things arrogantly, as he should.  But he appears to have
+lost his arrogance when we ask him to lecture: 
+
+\beginlisp
+(ask Albert 'lecture '(the sky is blue))
+(THE SKY IS BLUE)
+(YOU SHOULD BE TAKING NOTES)
+\endlisp
+
+The bug here is that when Albert tells his internal {\tt lecturer} to handle the
+{\tt lecture}  message, all information that this is being done as part of Albert
+is lost.  We can see this from the following environment diagram.  Note
+that Albert, his internal lecturer, and his internal lecturer's internal
+speaker, each have a {\tt self}.     
+
+\vskip 2in
+%insert figure
+
+(The empty frames are from {\tt make-arrogant-lecturer} and {\tt
+make-lecturer} which have no parameters.)  When Albert's lecturer
+returns its {\tt lecture} method, namely,
+
+\beginlisp
+(lambda (stuff)
+  (ask self 'say stuff)
+  (ask self 'say '(you should be taking notes)))
+\endlisp
+
+it is the lecturer's {\tt self,} not the Albert {\tt self} that is asked to
+{\tt say} things. 
+
+{\bf Fixing the bug}
+
+We can fix this by changing the implementation so that all the methods
+keep track of self, by taking self as an extra input.  For example,
+make-speaker now becomes:  
+
+\beginlisp
+(define (make-speaker)
+  (define (self message)
+    (cond ((eq? message 'say)
+           (lambda (self stuff) (display stuff)))
+          (else (no-method message))))
+  self)
+\endlisp
+
+To make this implementation work, we change the definition of  {\tt ask}
+so that the object is also passed to the method (to serve as the {\tt
+self} argument):  
+
+\beginlisp
+(define (ask object message . args)
+  (let ((method (get-method object message)))
+    (if (method? method)
+         (apply method (cons object args))
+         (error "No method" message (cadr method)))))
+\endlisp
+
+Here are the new corresponding definitions of {\tt make-lecturer} and
+{\tt make-arrogant-lecturer.}  Other than the extra {\tt self} arguments
+to the
+methods, everything works as before, except this time the bug has been
+fixed:   
+
+\beginlisp
+(define (make-lecturer)
+  (let ((speaker (make-speaker)))
+    (define (self message)
+      (cond ((eq? message 'lecture)
+             (lambda (self stuff)
+               (ask self 'say stuff)
+               (ask self 'say '(you should be taking notes))))
+            (else (get-method speaker message))))
+    self))
+\null
+(define (make-arrogant-lecturer)
+  (let ((lecturer (make-lecturer)))
+    (define (self message)
+      (cond ((eq? message 'say)
+             (lambda (self stuff)
+               (ask lecturer 'say (append '(it is obvious that) stuff))))
+            (else (get-method lecturer message))))
+    self))
+\null
+(define Albert (make-arrogant-lecturer))
+\null
+(ask Albert 'say '(the sky is blue))
+(IT IS OBVIOUS THAT THE SKY IS BLUE)
+\null
+(ask Albert 'lecture '(the sky is blue))
+(IT IS OBVIOUS THAT THE SKY IS BLUE)
+(IT IS OBVIOUS THAT YOU SHOULD BE TAKING NOTES)
+\null
+\endlisp
+
+%{\bf Simplifying the syntax}
+%
+%Our implementation is now correct, but object definitions are tedious to
+%type.  We can make our life easier by establishing some abbreviations
+%that automatically fill in the {\tt self} arguments and the {\tt eq?}
+%tests of the message.   
+%
+%We'll set up the syntax {\tt (make-object body)} to be an abbreviation for
+%
+%\beginlisp
+%(sequence
+%   (define self (lambda (message) body)
+%   self)
+%\endlisp
+%
+%and we'll set up the syntax {\tt (object-cond clauses)} to be just like
+%{\tt cond} except that clauses of the form 
+%
+%\beginlisp
+%(defmethod (name args) body)
+%\endlisp
+%
+%will be abbreviations for 
+%
+%\beginlisp
+%((eq? message 'name) (lambda (self args) body))
+%\endlisp
+%
+%We haven't shown you in 6.001 how to actually set up such abbreviations.
+%Take it on faith that we can do so.  You'll learn how to do this sort of
+%thing in problem set 8.  
+% 
+%Here are our new object definitions, once we take advantage of these
+%abbreviations:
+%
+%\beginlisp
+%(define (make-speaker)
+%  (make-object
+%   (object-cond
+%    (defmethod (say stuff) (display stuff))
+%    (else (no-method "SPEAKER")))))
+%\null
+%(define (make-lecturer)
+%  (let ((speaker (make-speaker)))
+%    (make-object
+%     (object-cond
+%      (defmethod (lecture stuff)
+%        (ask self 'say stuff)
+%        (ask self 'say '(you should be taking notes)))
+%      (else (get-method speaker message))))))
+%\null
+%(define (make-arrogant-lecturer)
+%  (let ((lecturer (make-lecturer)))
+%    (make-object
+%     (object-cond
+%      (defmethod (say stuff)
+%         (ask lecturer 'say (append '(it is obvious that) stuff)))
+%      (else (get-method lecturer message))))))
+%\endlisp
+
+{\bf Multiple superclasses}
+
+We can have object types that inherit methods from more than one type.
+Here, for example, is a {\tt singer,} that can sing and also say things: 
+
+\beginlisp
+(define (make-singer)
+  (lambda (message)
+    (cond ((eq? message 'say)
+           (lambda (self stuff)
+             (display (append '(tra-la-la --) stuff))))
+          ((eq? message 'sing)
+           (lambda (self)
+             (display '(tra-la-la))))
+          (else (no-method "SINGER")))))
+\null
+(define anna (make-singer))
+\null
+(ask anna 'sing)
+(TRA-LA-LA)
+\null
+(ask anna 'say '(the sky is blue))
+(TRA-LA-LA -- THE SKY IS BLUE)
+\null
+\endlisp
+
+We'll make Ben be both a singer and a lecturer:
+
+\beginlisp
+(define ben
+  (let ((singer (make-singer))
+        (lecturer (make-lecturer)))
+    (lambda (message)
+      (let ((sing (get-method singer message))
+            (lect (get-method lecturer message)))
+        (if (method? sing)
+            sing
+            lect)))))
+\null
+(ask ben 'sing)
+(TRA-LA-LA)
+\null
+(ask ben 'lecture '(the sky is blue))
+(TRA-LA-LA -- THE SKY IS BLUE)
+(TRA-LA-LA -- YOU SHOULD BE TAKING NOTES)
+\null
+\endlisp
+
+Ben is both a singer and a lecturer, but primarily a singer.  It is only
+if his internal singer has no method that he passes the message on to
+his internal lecturer.  We could also have done it the other way round.
+Alyssa here is also both a singer and a lecturer, but primarily a lecturer:   
+
+\beginlisp
+(define alyssa
+  (let ((singer (make-singer))
+        (lecturer (make-lecturer)))
+    (lambda (message)
+      (let ((sing (get-method singer message))
+           (lect (get-method lecturer message)))
+        (if (method? lect)
+            lect
+            sing)))))
+\null
+(ask alyssa 'sing)
+(TRA-LA-LA)
+\null
+(ask alyssa 'lecture '(the sky is blue))
+(THE SKY IS BLUE)
+(YOU SHOULD BE TAKING NOTES)
+\null
+\endlisp
+
+Much of the complexity of contemporary object-oriented programming
+languages has to do with specifying ways to control the order of
+inheritance in situations like this. 
+
+\end{document}

@@ -1,0 +1,6 @@
+Streams and series
+Relevant sections in text: 3.5
+
+This assignment explores the use of infinite streams to represent
+power series.
+

@@ -1,0 +1,706 @@
+%\documentstyle[6001]{article}
+% Document Type: LaTeX
+% Master File: ps3rsa.tex
+
+%Warning: This was Latex'ed on a Mac in order to include the figures
+% this next is to generate figures on the Mac
+
+%\def\picture here
+
+\def\picture #1 by #2 (#3){
+  $${\vbox to #2{
+    \hrule width #1 height 0pt depth 0pt
+    \vfill
+    \special{picture #3} % this is the low-level interface
+    }}$$
+  }
+\input ../6001mac
+%\input /zu/u6001/6001mac
+%\input /b/meyer/6001/94-dir/pub-dir-F94/6001mac
+
+\let\to\rightarrow
+\let\union\cup
+\let\cross\times
+\def\SN{\mbox{Sch-\-Num}}
+\def\SB{\mbox{Sch-Bool}}
+\def\Empty{\mbox{Empty}}
+\def\SI{\mbox{Sch-Int}}
+\def\SNI{\mbox{Sch-Nonneg-Int}}
+\def\CRV{\mbox{Curve}}
+\def\UI{\mbox{Unit-Interval}}
+\def\PT{\mbox{Point}}
+\def\UT{\mbox{Curve-Transform}}
+\def\BT{\mbox{Binary-Transform}}
+
+\def\fbox#1{%
+  \vtop{\vbox{\hrule%
+     \hbox{\vrule\kern3pt%
+ \vtop{\vbox{\kern3pt#1}\kern3pt}%
+ \kern3pt\vrule}}% 
+ \hrule}}
+
+
+
+\begin{document} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\psetheader{SAMPLE} {Graphing Problem Set}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{center}\large
+{\bf Graphing with Higher-order Procedures}
+\end{center}
+
+\medskip
+
+One of the things that makes Scheme different from other common
+programming languages is the ability to operate with {\em higher-order
+procedures}, namely, procedures that manipulate and generate other
+procedures.  This problem set will give you extensive practice with
+higher-order procedures, in the context of a language for graphing
+two-dimensional curves and other shapes.  Sections 1 and 2 give some
+background on the essential ideas, with exercises included.
+Section 3, the actual programming assignment, describes the graphics
+language and gives applications to generating fractal designs.  There
+is also an optional design problem.
+
+
+\section{1. Procedure Types and Procedure Constructors}
+
+In this assignment we use many procedures which may be applied to many
+different types of arguments and may return different types of values.  To
+keep track of this, it will be helpful to have some simple notation to
+describe types of Scheme values.
+
+Two basic types of values are \SN, the Scheme numbers such as 3,
+-4.2, 6.931479453e89, and \SB, the truth values {\tt \#t,\#f}.
+The procedure {\tt square} may be applied to a \SN\ and will return
+another \SN.  We indicate this with the notation:
+\[{\tt square} : \SN \to \SN \]
+
+If {\tt f} and {\tt g}  are procedures of type $\SN \to \SN$, then we may
+{\em compose} them:
+
+\beginlisp
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+\endlisp
+
+\noindent
+Thus, for example {\tt (compose square log)} is the procedure of type $\SN
+\to \SN$ that returns the square of the logarithm of its argument, while
+{\tt (compose log square)} returns the logarithm of the square of its
+argument:
+
+\beginlisp
+(log 2)
+;Value: .6931471805599453
+\null
+((compose square log) 2)
+;Value: .4804530139182014
+\null
+((compose log square) 2)
+;Value: 1.3862943611198906
+\endlisp
+
+\noindent
+As we have used it above, the procedure {\tt compose} takes as arguments
+two procedures of type $F = \SN \to \SN$, and returns another such
+procedure.  We indicate this with the notation:
+\[{\tt compose} : (F, F) \to F\]
+
+Just as squaring a number multiplies the number by itself, {\tt thrice} of
+a function composes the function three times.  That is, {\tt ((thrice f)
+n)} will return the same number as {\tt (f(f(f n)))}:
+
+\beginlisp
+(define (thrice f)
+  (compose (compose f f) f))
+\null
+((thrice square) 3)
+;Value: 6561
+\null
+(square (square (square 3)))
+;Value: 6561
+\endlisp
+
+As used above, {\tt thrice} is of type $(F \to F)$.  That is, it takes as
+input a function from numbers to numbers and returns the same kind of
+function.  But {\tt thrice} will actually work for other kinds of input
+functions.  It is enough for the input function to have a type of the form
+$T\to T$, where $T$ may be any type.  So more generally, we can write
+\[\hbox{\tt thrice} : (T\to T) \to (T\to T) \]
+
+Composition, like multiplication, may be iterated.  Consider 
+the following:
+
+\beginlisp
+(define (identity x) x)
+\null
+(define (repeated f n)
+  (if (= n 0)
+      identity
+      (compose f (repeated f (- n 1)))))
+
+\null
+
+((repeated sin 5) 3.1)
+;Value: 4.1532801333692235e-2
+
+\null
+
+(sin(sin(sin(sin(sin 3.1)))))
+;Value: 4.1532801333692235e-2
+\endlisp
+
+\[\hbox{\tt repeated} : ((T\to T),\SNI) \to (T\to T)\]
+
+\paragraph{Exercise 1.A} The type of {\tt thrice} is of the form
+$(T'\to T')$ (where $T'$ happens to equal $(T\to T)$), so we can
+legitimately use {\tt thrice} as an input to {\tt thrice}!
+
+For what value of {\tt n} will {\tt (((thrice thrice) f) 0)} return the
+same value\footnote{``Sameness'' of procedure values is a sticky issue
+which we don't want to get into here.  We can avoid it by assuming that
+{\tt f} is bound to a value of type $F$, so evaluation of {\tt (((thrice
+thrice) f) 0)} will return a number.} as {\tt ((repeated f n) 0)}?
+
+See if you can now predict what will happen when the following expressions
+are evaluated.  Briefly explain what goes on in each case.
+\begin{enumerate}
+\item {\tt (((thrice thrice) 1+) 6)}
+\item {\tt (((thrice thrice) identity) compose)}
+\item {\tt (((thrice thrice) square) 1)}
+\item {\tt (((thrice thrice) square) 2)}.
+\end{enumerate}
+
+\paragraph{Exercise 1.B}  Test your predictions.  ({\bf Warning}:
+Before you do this, make sure you understand how to {\em interrupt} a 
+Scheme evaluation.)
+
+\section{2. Curves as Procedures and Data}
+
+We're going to develop a language for defining and drawing planar curves.
+We'd like to plot points, construct graphs of functions, transform curves
+by scaling and rotating, and so on.  One of the key ideas that we'll
+stress throughout 6.001 is that a well-designed language has parts that
+combine to make new parts that themselves can be combined.  This property
+is called {\em closure}.
+
+A planar curve in ``parametric form'' can be described mathematically as a
+function from parameter values to points in the plane.  For example, we
+could describe the {\em unit-circle} as the function taking $t$ to $(\cos
+2 \pi t, \sin 2 \pi t)$ where $t$ ranges over the unit interval $[0,1]$.  In Scheme,
+we let \UI\ be the type of Scheme-numbers between 0 and 1, and we
+represent curves by procedures of Scheme type \CRV, where
+\[\CRV = \UI\to \PT\]
+and \PT\ is some representation of pairs of \SN's.
+
+To work with \PT, we need a {\em constructor}, {\tt make-point}, which
+constructs \PT's from \SN's, and {\em selectors}, {\tt x-of} and {\tt y-of},
+for getting the $x$ and $y$ coordinates of a \PT.  We require only that
+the constructors and selectors obey the rules
+\begin{eqnarray*}
+(\hbox{\tt x-of}\, (\hbox{\tt make-point}\, n\, m)) & = & n\\
+(\hbox{\tt y-of}\, (\hbox{\tt make-point}\, n\, m)) & = & m
+\end{eqnarray*}
+for all \SN's $m,n$.  Here is one way to do this (we'll learn several
+other, better ways, in two weeks.)
+
+\beginlisp
+(define (make-point x y)
+  (lambda (bit)
+    (if (zero? bit) x y)))
+\null
+(define (x-of point)
+  (point 0))
+\null
+(define (y-of point)
+  (point 1))
+\endlisp
+
+\begin{eqnarray*}
+\hbox{\tt make-point} & : & (\SN,\SN) \to \PT,\\
+\hbox{\tt x-of}, \hbox{\tt y-of} & : & \PT\to \SN.
+\end{eqnarray*}
+
+For example, we can define the \CRV\ {\tt unit-circle} and the \CRV\ {\tt
+unit-line} (along the $x$-axis):
+
+\beginlisp
+(define (unit-circle t)
+  (make-point (sin (* 2pi t))
+              (cos (* 2pi t))))
+\null
+(define (unit-line-at y)
+  (lambda (t) (make-point t y)))
+\null
+(define unit-line (unit-line-at 0))
+
+\endlisp
+
+\paragraph{Exercise 2:}
+
+\begin{enumerate}
+\item What is the type of {\tt unit-line-at}?
+
+\item Define a procedure {\tt vertical-line} with two arguments, a point and a
+length, and returns a vertical line of that length beginning at the point.
+
+\item What is the type of {\tt vertical-line}?
+
+\end{enumerate}
+\medskip
+
+In addition to the direct construction of \CRV's such as {\tt unit-circle}
+or {\tt unit-line}, we can use elementary Cartesian geometry in designing
+Scheme procedures which {\em operate} on \CRV's.  For example, the mapping
+$(x,y)\longrightarrow (-y,x)$ rotates the plane by $\pi/2$, so
+
+\beginlisp
+(define (rotate-pi/2 curve)
+  (lambda (t)
+    (let ((ct (curve t)))
+      (make-point
+       (- (y-of ct))
+       (x-of ct)))))
+\endlisp
+defines a procedure which takes a curve and transforms it into another,
+rotated, curve.  The type of {\tt rotate-pi/2} is
+\[\UT = \CRV \to \CRV.\]
+
+\paragraph{Exercise 3:}
+Write a definition of a \UT\ {\tt reflect-through-y-axis}, which turns a
+curve into its mirror image.
+
+\medskip
+
+We have provided a variety of other procedure \UT's and procedures which
+construct \UT's in the file {\tt curves.scm}.  For example,
+\begin{itemize}
+
+\item 
+{\tt translate} returns a \UT\ which rigidly moves a curve given distances
+along the $x$ and $y$ axes,
+
+\item {\tt scale-x-y}
+returns a \UT\ which stretches a curve along the $x$ and $y$ coordinates
+by given scale factors, and
+
+\item {\tt rotate-around-origin}
+returns a \UT\ which rotates a curve by a given number of radians.
+
+\end{itemize}
+A convenient, if somewhat more complicated, \UT\ is {\tt
+put-in-standard-position}.  We'll say a curve is in {\em standard
+position} if its start and end points are the same as the unit-line,
+namely it starts at the origin, $(0,0)$, and ends at the point $(1,0)$.
+We can put any curve whose start and endpoints are not the same into
+standard position by rigidly translating it so its starting point is at
+the origin, then rotating it about the origin to put its endpoint on the
+$x$ axis, then scaling it to put the endpoint at $(1,0)$:
+
+\beginlisp
+(define (put-in-standard-position curve)
+  (let* ((start-point (curve 0))
+         (curve-started-at-origin
+          ((translate (- (x-of start-point))
+                      (- (y-of start-point)))
+           curve))
+         (new-end-point (curve-started-at-origin 1))
+         (theta (atan (y-of new-end-point) (x-of new-end-point)))
+         (curve-ended-at-x-axis
+          ((rotate-around-origin (- theta)) curve-started-at-origin))
+         (end-point-on-x-axis (x-of (curve-ended-at-x-axis 1))))
+    ((scale (/ 1 end-point-on-x-axis)) curve-ended-at-x-axis)))
+\endlisp
+
+It is useful to have operations which combine curves into new ones.  We
+let \BT\ be the type of binary operations on curves, \[\BT =
+(\CRV,\CRV)\to \CRV.\] The procedure {\tt connect-rigidly} is a simple
+\BT.  Evaluation of {\tt (connect-rigidly curve1 curve2)} returns a curve
+consisting of {\tt curve1} followed by {\tt curve2}; the starting point of
+the curve returned by {\tt (connect-rigidly curve1 curve2)} is the same as
+that of {\tt curve1} and the end point is the same as that of {\tt
+curve2}.
+
+\beginlisp
+(define (connect-rigidly curve1 curve2)
+  (lambda (t) 
+    (if (< t (/ 1 2))
+        (curve1 (* 2 t))
+        (curve2 (- (* 2 t) 1)))))
+\endlisp
+
+\paragraph{Exercise 4:} There is another, possibly more
+natural, way of connecting curves.  The curve returned by {\tt
+(connect-ends curve1 curve2)} consists of a copy of {\tt curve1}
+follwed by a copy of {\tt curve2} after it has been rigidly translated
+so its starting point coincides with the end point of {\tt curve1}.
+
+Write a definition of the \BT\ {\tt connect-ends}.
+
+\section{3. Drawing Curves}
+
+Use {\tt M-x load-problem-set} to load the code for problem set 2.  This
+will create three graphics windows called {\tt g1}, {\tt g2} and {\tt g3}.
+The window coordinates go from 0 to 1 in both $x$ and $y$ with $(0,0)$ at
+the lower left.
+
+A {\em drawing procedure} takes a curve argument and automagically
+displays points on the curve in a window\footnote{{\em The Hacker's
+Dictionary} (see the Jargon file) defines ``automagically'' as
+``automatically, but in a way which, for some reason (typically because it
+is too complicated, or too ugly, or perhaps even too trivial), the speaker
+doesn't feel like explaining.''  In this case, we don't want to explain
+the bletcherous (see Jargon) details of how points are plotted.}.  We've
+provided several procedures that take a window (for example {\tt g1}) and
+a number of points, and return a drawing procedure, namely,
+\begin{itemize}
+\item {\tt draw-points-on},
+\item {\tt draw-connected},
+\item {\tt draw-points-squeezed-to-window}, and
+\item {\tt draw-connected-squeezed-to-window}.
+\end{itemize}
+
+\paragraph{Exercise 5:}
+Apply {\tt (draw-connected g1 200)} to {\tt unit-circle}, and {\tt
+(draw-connected g2 200)} to {\tt alternative-unit-circle}.  Can you see a
+difference?  Now try using {\tt draw-points-on} instead of {\tt
+draw-connected}.  Also try {\tt draw-points-squeezed-to-window}.  Print
+out the resulting figures.
+
+\subsection{Fractal Curves}
+
+To show off the power of our drawing language, let's use it to explore
+fractal curves.  Fractals have striking mathematical
+properties.\footnote{A fractal curve is a ``curve'' which, if you
+expand any small piece of it, you get something similar to the
+original.  The Gosper curve, for example, is neither a true
+1-dimensional curve, nor a 2-dimensional region of the plane, but
+rather something in between.} Fractals have received a lot of
+attention over the past few years, partly because they tend to arise
+in the theory of nonlinear differential equations, but also because
+they are pretty, and their finite approximations can be easily
+generated with recursive computer programs.
+
+For example, Bill Gosper\footnote{Bill Gosper is a mathematician now
+living in California.  He was one of the original hackers who worked
+for Marvin Minsky in the MIT Artificial Intelligence Laboratory during
+the '60s.  He is perhaps best known for his work on the Conway Game of
+Life---a set of rules for evolving cellular automata.  Gosper invented
+the ``glider gun'', resolving Conway's question as to whether it is
+possible to produce a finite pattern that evolves into an unlimited
+number of live cells.  He used this result to prove that the Game of
+Life is Turing universal, in that it can be used to simulate any other
+computational process!} discovered that the infinite repetition of a
+very simple process creates a rather beautiful image, now called the
+{\em Gosper C Curve}.  At each step of this process there is an
+approximation to the Gosper curve.  The next approximation is obtained
+by adjoining two scaled copies of the current approximation, each
+rotated by 45 degrees.
+
+Figure~\ref{Gosper} shows the first few approximations to the Gosper
+curve, where we stop after a certain number of levels: a level-0 curve
+is simply a straight line; a level-1 curve consists of two level-0
+curves; a level 2 curve consists of two level-1 curves, and so on.
+The figure also illustrates a recursive strategy for making the next
+level of approximation: a level-$n$ curve is made from two
+level-$(n-1)$ curves, each scaled to be ${\sqrt 2}/2$ times the length
+of the original curve.  One of the component curves is rotated by
+$\pi/4$ (45 degrees) and the other is rotated by $-\pi/4$.  After each
+piece is scaled and rotated, it must be translated so that the ending
+point of the first piece is continuous with the starting point of the
+second piece.
+
+We assume that the approximation we are given to improve (named {\tt
+curve} in the procedure) is in standard position.  By doing some
+geometry, you can figure out that the second curve, after being scaled
+and rotated, must be translated right by .5 and up by .5, so its beginning
+coincides with the endpoint of the rotated, scaled first curve.  This leads
+to the \UT\ {\tt gosperize}:
+
+%\label{Gosper} here
+
+\begin{figure}
+\picture 4.50 in by 2.54 in (C-curve)
+\caption{{\protect\footnotesize
+Examples of the Gosper C curve at various levels, and 
+the recursive transformation that produces each level from the previous
+level.}}
+\label{Gosper}
+\end{figure}
+
+\beginlisp
+(define (gosperize curve)
+  (let ((scaled-curve ((scale (/ (sqrt 2) 2)) curve)))
+    (connect-rigidly ((rotate-around-origin (/ pi 4)) scaled-curve)
+                     ((translate .5 .5)
+                      ((rotate-around-origin (/ -pi 4)) scaled-curve)))))
+\endlisp
+
+Now we can generate approximations at any level to the Gosper curve by
+repeatedly gosperizing the unit line,
+
+\beginlisp
+(define (gosper-curve level)
+    ((repeated gosperize level) unit-line))
+\endlisp
+
+To look at the level {\tt level} gosper curve, evaluate {\tt
+(show-connected-gosper level)}:
+
+\beginlisp
+(define (show-connected-gosper level)
+  ((draw-connected g1 200)
+   ((squeeze-rectangular-portion -.5 1.5 -.5 1.5)
+    (gosper-curve level))))
+\endlisp
+
+\paragraph{Exercise 6.A} Define a procedure {\tt show-points-gosper}
+such that evaluation of
+
+\beginlisp
+(show-points-gosper window level number-of-points initial-curve)
+\endlisp
+
+\noindent
+will plot {\tt number-of-points} unconnected points of the level {\tt
+level} gosper curve in {\tt window}, but starting the gosper-curve
+approximation with an arbitrary {\tt initial-curve} rather than the unit
+line.  For instance,
+
+\beginlisp
+(show-points-gosper g1 level 200 unit-line)
+\endlisp
+
+\noindent should display the same points as {\tt
+(show-connected-gosper level)}, but without connecting them.  But you
+should also be able to use your procedure with arbitrary curves.  (You can
+find the description of procedure {\tt squeeze-rectangular-portion} in the
+file {\tt curves.scm}; you don't need to understand it in detail to do
+this exercise.)
+
+\paragraph{Exercise 6.B}
+Try gosperizing the arc of the unit circle running from 0 to $\pi$.  Find
+some examples that produce interesting designs.  (You may also want to
+change the scale in the plotting window and the density of points
+plotted.)\footnote{One of the things you should notice is that, for larger
+values of $n$, all of these curves look pretty much the same.  As with
+many fractal curves, the shape of the Gosper curve is determined by the
+Gosper process itself, rather than the particular shape we use as a
+starting point.  In a sense that can be made mathematically precise, the
+``infinite level'' Gosper curve is a fixed point of the Gosper process,
+and repeated applications of the process will converge to this fixed
+point.}
+
+\medskip
+
+The Gosper fractals we have been playing with have had the angle of
+rotation fixed at 45 degrees. This angle need not be fixed.  It need not
+even be the same for every step of the process.  Many interesting shapes
+can be created by changing the angle from step to step.
+
+We can define a procedure {\tt param-gosper} that generates Gosper curves
+with changing angles.  {\tt Param-gosper} takes a level number (the number
+of levels to repeat the process) and a second argument called {\tt
+angle-at}. The procedure {\tt angle-at} should take one argument, the level
+number, and return an angle (measured in radians) as its answer
+\[\hbox{\tt angle-at} : \SNI \to \SN.\]
+Procedure {\tt param-gosper} can use this to calculate the angle to be
+used at each step of the recursion.
+
+\beginlisp
+(define (param-gosper level angle-at)
+  (if (= level 0)
+      unit-line
+      ((param-gosperize (angle-at level))
+       (param-gosper (- level 1) angle-at))))
+\endlisp
+
+
+The procedure {\tt param-gosperize} is almost like {\tt gosperize}, except
+that it takes an another argument, the angle of rotation, and implements
+the process shown in figure~\ref{param-geo}:
+        
+\beginlisp        
+(define (param-gosperize theta)
+  (lambda (curve)
+    (let ((scale-factor (/ (/ 1 (cos theta)) 2)))
+      (let ((scaled-curve ((scale scale-factor) curve)))
+        (connect-rigidly ((rotate-around-origin theta) scaled-curve)
+                         ((translate .5 (* (sin theta) scale-factor))
+                          ((rotate-around-origin (- theta)) scaled-curve)))))))
+\endlisp
+
+% \label{param-geo} here
+\begin{figure}
+\picture 4.14 in by 1.69 in (Param-geo)
+\caption{{\protect\footnotesize
+A parameterized version of the Gosper process, where the
+angle can vary.  Note that the endpoints of the transformed figure
+should be the same as the endpoints of the original figure, and
+the interior endpoints should match.}}
+\label{param-geo}
+\end{figure}
+
+
+For example, the ordinary Gosper curve at level {\tt level} is returned by
+
+\beginlisp
+(param-gosper level (lambda (level) pi/4))
+\endlisp
+
+\paragraph{Exercise 7.A}  Designing {\tt param-gosperize} required
+using some elementary trigonometry to figure out how to shift the pieces
+around so that they fit together after scaling and rotating.  It's easier
+to program if we let the computer figure out how to do the shifting.  Show
+how to redefine {\tt param-gosperize} using the procedures {\tt
+put-in-standard-position} and {\tt connect-ends} from Exercise 4 to handle
+the trigonometry.  Your definition should be of the form
+
+\beginlisp
+(define (param-gosperize theta)
+  (lambda (curve)
+    (put-in-standard-position
+      (connect-ends
+        ...
+        ...))))
+\endlisp
+
+
+\paragraph{Exercise 7.B}
+Generate some parameterized Gosper curves where the angle changes with the
+level $n$.  We suggest starting with $\pi/(n+2)$ and $\pi/(1.3^n)$.
+Submit sample printouts with your problem solutions.
+
+\paragraph{Exercise 7.C}
+We now have three procedures to compute gosper curves: {\tt gosper-curve},
+and {\tt param-gosper} with argument {\tt (lambda (level) (/ pi 4)))}
+using the ``hand-crafted'' definition of {\tt param-gosperize} above, or
+using your version of {\tt param-gosperize} in 7.A based on {\tt
+put-in-standard-position}.  Compare the speed of these procedures for
+computing selected points on the curve at a few levels.  Is there a speed
+advantage for the more customized procedures?
+
+The procedure {\tt show-time} will report the time in milliseconds
+required to evaluate a procedure of no arguments (a ``thunk'').  For
+example, evaluating
+
+\beginlisp
+(show-time (lambda () ((gosper-curve 10) .1))
+\endlisp
+will print out the time to compute the point at .1 on the level 10 gosper-curve.
+
+\medskip
+
+\paragraph{Exercise 8.A}
+Ben Bitdiddle isn't entirely happy with the style of several of the Scheme
+definitions on this problem set. In particular, he feels the code goes
+overboard in inventing names for values that are used infrequently, and
+this lengthens the code and burdens someone reading the code with
+remembering the invented names.  For example, Ben thinks the definition
+
+\beginlisp
+(define (rotate-around-origin theta)
+  (let ((cth (cos theta))
+        (sth (sin theta)))
+    (lambda (curve)
+      (lambda (t)
+        (let ((ct (curve t)))      ;Ben eliminates the declaration of ct
+          (let ((x (x-of ct))
+                (y (y-of ct)))
+            (make-point
+             (- (* cth x) (* sth y))
+             (+ (* sth x) (* cth y)))))))))
+\endlisp
+
+would be a bit more readable if the name {\tt ct} for the value of {\tt
+(curve t)} was dropped.  He proposes instead:
+
+\beginlisp
+(define (bens-rotate theta)
+  (let ((cth (cos theta))
+        (sth (sin theta)))
+    (lambda (curve)
+      (lambda (t)
+        (let ((x (x-of (curve t)))      ;Ben writes (curve t)
+              (y (y-of (curve t))))     ;twice
+          (make-point
+           (- (* cth x) (* sth y))
+           (+ (* sth x) (* cth y))))))))
+\endlisp
+
+Is Ben's definition correct?
+
+Alyssa P. Hacker warns Ben that the {\tt let} declarations are more
+significant computationally than mere abbreviations.  Briefly explain why
+using {\tt bens-rotate} as a subprocedure in place of the original {\tt
+rotate-around-origin} in the definition of {\tt gosper-curve} will turn a
+process whose time is linear in the level into one which is exponential in
+the level.
+
+\paragraph{Exercise 8.B}
+Look up the online documentation of the {\tt trace-entry} procedure in the
+Scheme Users Manual.  Trace {\tt x-of} to show how dramatically Alyssa's
+warning is confirmed when computing points on the gosper curve using {\tt
+bens-rotate} as a subprocedure in place of the original {\tt
+rotate-around-origin}.  Turn in a table summarizing the number of calls to
+{\tt x-of} by {\tt gosper-curve} using the two different rotating
+procedures at four or five illustrative levels.  (A simple way to switch
+to use of {\tt bens-rotate} in place of {\tt rotate-around-origin} is to
+evaluate
+
+\beginlisp
+(define rotate-around-origin bens-rotate)
+\endlisp
+Of course, you had better save the procedure {\tt rotate-around-origin}
+under some other name so you can restore it.  Otherwise, you may have to
+reload the problem set.)
+
+\medskip
+
+We can now invent other schemes like the Gosper process, and use them
+to generate fractal curves.
+
+\paragraph{Exercise 9.A}  The {\em Koch curve} is produced by a
+process similar to the Gosper curve, as shown in figure~\ref{Koch}.
+Write a procedure {\tt kochize} that generates Koch curves.
+% \label{Koch} here
+
+\begin{figure}
+\picture 5.15 in by 1.85 in (Koch)
+\caption{{\protect\footnotesize
+The Koch at various levels, and a ``snowflake'' curve formed from
+three Koch curves.  As with the C curve, each level approximation
+to the Koch curve is obtained by
+applying the a transformation to the previous level.}}
+\label{Koch}
+\end{figure}
+
+(Teaser: You can generate the Koch curve by using {\tt param-gosper} with
+an appropriate argument.  Can you find this?)
+
+
+\paragraph{Exercise 9.B} Print some pictures of your Koch curve at
+various levels.
+
+\paragraph{Exercise 10 (Optional)}
+
+You now have a lot of elements to work with: scaling, rotation,
+translation, curve plotting, Gosper processes, Koch processes, and
+generalizations.  For example, you can easily generalize the
+parameterized Gosper process to start with something other than an
+horizontal line.  The Gosper curve is continuous but {\em nowhere
+differentiable}, so it may be interesting to display its derivatives
+at various levels and numbers of points (see the procedure {\tt
+deriv-t} in the file {\tt curves.scm}).  Or you can create new fractal
+processes.  Or you can combine the results of different processes into
+one picture.  Spend some time playing with these ideas to see what you
+can come up with.
+
+\end{document}
+

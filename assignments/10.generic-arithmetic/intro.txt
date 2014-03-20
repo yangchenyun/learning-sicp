@@ -1,0 +1,7 @@
+Generic arithmetic
+Relevant sections in text: 2.4, 2.5
+
+This assignment is based on sections 2.4 and 2.5 of the text, which
+discuss a generic arithmetic system that is capable of dealing with
+rational functions (quotients of polynomials).  
+

@@ -1,0 +1,7 @@
+The Game of Twenty-One
+Relevant section in text: 1.3
+
+This assignment presents a simple game-playing program, in which
+strategies are represented as higher-order procedures. The prisoner's dilemma assignment
+takes a similar approach.
+

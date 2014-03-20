@@ -1,0 +1,596 @@
+\input /zu/6001-devel/fall94/6001mac
+
+\begin{document}
+
+\psetheader{Sample programming assignment}{Prisoner's Dilemma}
+
+\section{The Prisoner's Dilemma: A Fable}
+
+In the mid-1920's, the Nebraska State Police achieved what may still
+be their finest moment. After a 400-mile car chase over dirt roads and
+corn fields, they finally caught up with the notorious bank robbers
+Bonnie and Clyde. The two criminals were brought back to the police
+station in Omaha for further interrogation.
+
+Bonnie and Clyde were questioned in separate rooms, and each was
+offered the same deal by the police. The deal went as follows (since
+both are the same, we need only describe the version presented to
+Bonnie):
+
+``Bonnie, here's the offer that we are making to both you and Clyde.
+If you both hold out on us, and don't confess to bank robbery, then we
+admit that we don't have enough proof to convict you. However, we {\it
+will} be be able to jail you both for one year, for reckless driving
+and endangerment of corn. If you turn state's witness and help us
+convict Clyde (assuming he doesn't confess), then you will go free,
+and Clyde will get twenty years in prison. On the other hand, if you
+don't confess and Clyde does, then {\it he} will go free and {\it you}
+will get twenty years.''
+
+``What happens if both Clyde and I confess?'' asked Bonnie.
+
+``Then you both get ten years,'' said the interrogator.
+
+Bonnie, who had been a math major at Cal Tech before turning to crime,
+reasoned this way: ``Suppose Clyde intends to confess.  Then if I
+don't confess, I'll get twenty years, but if I do confess, I'll only
+get ten years. On the other hand, suppose Clyde intends to hold out on
+the cops. Then if I don't confess, I'll go to jail for a year, but if
+I do confess, I'll go free.  So no matter what Clyde intends to do, I
+am better off confessing than holding out. So I'd better confess.''
+
+
+Naturally, Clyde employed the very same reasoning. Both criminals
+confessed, and both went to jail for ten years.\footnote{Actually,
+they didn't go to jail. When they were in court, and heard that they
+had both turned state's witness, they strangled each other.  But
+that's another story.} The police, of course, were triumphant, since
+the criminals would have been free in a year had both remained silent.
+
+
+\section{The Prisoner's Dilemma}
+
+The Bonnie and Clyde story is an example of a situation known in
+mathematical game theory as the ``prisoner's dilemma.'' A prisoner's
+dilemma always involves two ``game players,'' and each has a choice
+between ``cooperating'' and ``defecting.'' If the two players
+cooperate, they each do moderately well; if they both defect, they
+each do moderately poorly. If one player cooperates and the other
+defects, then the defector does extremely well and the cooperator does
+extremely poorly. (In the case of the Bonnie and Clyde story,
+``cooperating'' means cooperating with one's partner --- i.e., holding
+out on the police --- and ``defecting'' means confessing to bank
+robbery.) Before formalizing the prisoner's dilemma situation, we need
+to introduce some basic game theory notation.
+
+
+\subsection{A Crash Course in Game Theory}
+
+In game theory, a {\it two-person binary-choice game} is represented
+as a two-by-two matrix. Figure 1 shows a hypothetical game matrix.
+The two players in this case are called {\bf A} and {\bf B}, and
+the choices are called ``cooperate'' and ``defect.''
+
+\begin{center}
+\begin{tabular}{c|c|c|}
+             & B cooperates   & B defects  \\
+\cline{2-3}
+A cooperates & A gets 5       & A gets 2   \\
+             & B gets 5       & B gets 3   \\
+\cline{2-3}
+A defects    & A gets 3       & A gets 1 \\
+             & B gets 2       & B gets 1 \\
+\cline{2-3}
+\end{tabular}
+\end{center}
+
+\centerline{{\it Figure 1:\/} A hypothetical game matrix}
+
+Players {\bf A} and {\bf B} can play a single game by separately (and
+secretly) choosing to either cooperate or defect. Once each player has
+made a choice, he announces it to the other player; and the two then
+look up their respective scores in the game matrix.  Each entry in the
+matrix is a pair of numbers indicating a score for each player,
+depending on their choices. Thus, in Figure 1, if Player {\bf A}
+chooses to cooperate while Player {\bf B} defects, then {\bf A} gets 2
+points and {\bf B} gets 3 points. If both players defect, they each
+get 1 point. Note, by the way, that the game matrix is a matter of
+public knowledge; for instance, Player {\bf A} knows before the game
+even starts that if he and {\bf B} both choose to defect, they will
+each get 1 point.
+
+In an {\it iterated game}, the two players play repeatedly: thus,
+after finishing one game, {\bf A} and {\bf B} may play another.
+(Admittedly, there is a little confusion in the terminology here: you
+can think of each individual game as a single ``round'' of the larger,
+iterated game.) There are a number of ways in which iterated games may
+be played; in the simplest situation, {\bf A} and {\bf B} play for
+some fixed number of rounds (say, 200), and before each round they are
+able to look at the record of all previous rounds. For instance,
+before playing the tenth round of their iterated game, both {\bf A}
+and {\bf B} are able to study the results of the previous nine rounds.
+
+
+\subsection{An Analysis of a Simple Game Matrix}
+
+The game depicted in Figure 1 is a particularly easy one to analyze.
+Let's examine the situation from Player {\bf A}'s point of view
+(Player {\bf B}'s point of view is identical):
+
+``Suppose {\bf B} cooperates. Then I do better by cooperating
+myself (I receive five points instead of three). On the other
+hand, suppose {\bf B} defects. I still do better by cooperating
+(since I get two points instead of one). So no matter what
+{\bf B} does, I am better off cooperating.''
+
+Player {\bf B} will, of course, reason the same way, and both will
+choose to cooperate. In the terminology of game theory, both {\bf A}
+and {\bf B} have a {\it dominant} choice --- i.e., a choice that gives
+a preferred outcome no matter what the other player chooses to do.
+Figure 1, by the way, does {\it not} represent a prisoner's dilemma
+situation, since when both players make their dominant choice, they
+also both achieve their highest personal scores.  We'll see an example
+of a prisoner's dilemma game very shortly.
+
+To recap: in any particular game using the matrix of Figure 1, we
+would expect both players to cooperate; and in an iterated game, we would
+expect both players to cooperate repeatedly, on every round.
+
+\subsection{The Prisoner's Dilemma Game Matrix}
+
+Now consider the game matrix shown in Figure 2.
+
+\begin{center}
+\begin{tabular}{c|c|c|}
+             & B cooperates   & B defects  \\
+\cline{2-3}
+A cooperates & A gets 3       & A gets 0   \\
+             & B gets 3       & B gets 5   \\
+\cline{2-3}
+A defects    & A gets 5       & A gets 1 \\
+             & B gets 0       & B gets 1 \\
+\cline{2-3}
+\end{tabular}
+\end{center}
+
+\centerline{{\it Figure 2:\/} Prisoner's Dilemma Game Matrix}
+
+
+In this case, Players {\bf A} and {\bf B} both have a dominant
+choice---namely, defection. No matter what Player {\bf B} does,
+Player {\bf A} improves his own score by defecting, and vice versa.
+
+However, there is something odd about this game. It seems as though
+the two players would benefit by choosing to cooperate. Instead of
+winning only one point each, they could win three points each.  So the
+``rational'' choice of mutual defection has a puzzling
+self-destructive flavor.
+
+The matrix of Figure 2 is an example of a prisoner's dilemma game
+situation. Just to formalize the situation, let {\it CC} be the number
+of points won by each player when they both cooperate; let {\it DD} be
+the number of points won when both defect; let {\it CD} be the number
+of points won by the cooperating party when the other defects; and let
+{\it DC} be the number of points won by the defecting party when the
+other cooperates. Then the prisoner's dilemma situation is
+characterized by the following conditions:
+
+\begin{eqnarray*}
+DC > CC > DD > CD \\
+CC > (DC + CD) / 2
+\end{eqnarray*}
+
+In the game matrix of Figure 2, we have:
+
+\begin{eqnarray*}
+DC = 5 \\
+CC = 3 \\
+DD = 1 \\
+CD = 0
+\end{eqnarray*}
+
+\noindent so both conditions are met. In the Bonnie and Clyde story,
+by the way, you can verify that:
+
+\begin{eqnarray*}
+DC = 0 \\
+CC = -1 \\
+DD = -10 \\
+CD = -20
+\end{eqnarray*}
+
+
+\noindent Again, these values satisfy the prisoner's dilemma conditions.
+
+\section{Axelrod's Tournament}
+
+In the late 1970's, political scientist Robert Axelrod held a computer
+tournament designed to investigate the prisoner's dilemma
+situation.\footnote{Actually, there were two tournaments. Their rules
+and results are described in Axelrod's book {\sl The Evolution of
+Cooperation}.} Contestants in the tournament submitted computer
+programs that would compete in an iterated prisoner's dilemma game of
+approximately two hundred rounds, using the same matrix shown in
+Figure 2. Each contestant's program played five iterated games against
+each of the other programs submitted, and after all games had been
+played the scores were tallied.
+
+The contestants in Axelrod's tournament included professors of
+political science, mathematics, psychology, computer science, and
+economics. The winning program --- the program with the highest
+average score --- was submitted by Anatol Rapoport, a professor of
+psychology at the University of Toronto. In this problem set, we will
+pursue Axelrod's investigations and make up our own Scheme programs to
+play the iterated prisoner's dilemma game. The second (optional) part
+of this problem set is itself an experiment in the spirit of Axelrod's
+tournament: a contest of programs that play a {\it three-person}
+prisoner's dilemma game.
+
+Before we look at the two-player program, it is worth speculating on
+what possible strategies might be employed in the iterated prisoner's
+dilemma game. Here are some examples:
+
+\begin{description}
+
+\item[All-Defect]
+A program using the {\bf all-defect} strategy simply defects on
+every round of every game.
+
+\item[Poor-Trusting-Fool]
+A program using the {\bf poor-trusting-fool} strategy cooperates
+on every round of every game.
+
+\item[Random]
+This program cooperates or defects on a random basis.
+
+\item[Go-by-Majority]
+This program cooperates on the first round. On all subsequent rounds,
+{\bf go-by-majority} examines the history of the other player's
+actions, counting the total number of defections and cooperations by
+the other player. If the other player's defections outnumber her
+cooperations, {\bf go-by-majority} will defect; otherwise this
+strategy will cooperate.
+
+\item[Tit-for-Tat]
+This program cooperates on the first round, and then on every subsequent
+round it mimics the other player's previous move. Thus, if the other
+player cooperates (defects) on the $n$th round, then {\bf tit-for-tat}
+will cooperate (defect) on the $(n + 1)$th round.
+\end{description}
+
+All of these strategies are extremely simple. (Indeed, the first three
+do not even pay any attention to the other player; their responses are
+uninfluenced by the previous rounds of the game.)  Nevertheless,
+simplicity is not necessarily a disadvantage.  Rapoport's first-prize
+program employed the {\bf tit-for-tat} strategy, and achieved the
+highest average score in a field of far more complicated programs.
+
+
+\section{The Two-Player Prisoner's Dilemma Program}
+
+A Scheme program for an iterated prisoner's dilemma game is shown at
+the end of this problem set. The procedure {\tt play-loop} pits two
+players (or, to be more precise, two ``strategies'') against one another
+for approximately 100 games, then prints out the scores for each of
+the two players.
+
+Player strategies are represented as procedures. Each strategy takes
+two inputs --- its own ``history'' (that is, a list of all of its
+previous ``plays'') and its opponent's ``history.'' The strategy
+returns either the symbol {\tt c} (for ``cooperate'') or the symbol
+{\tt d} (for ``defect'').
+
+At the beginning of an iterated game, each history is an empty list.
+As the game progresses, the histories grow (via {\tt extend-history})
+into lists of {\tt c}'s and {\tt d}'s. Note how each strategy must
+have its {\it own} history as its first input. So in {\tt
+play-loop-iter}, {\tt strat0} has {\tt history0} as its first input,
+and {\tt strat1} has {\tt history1} as its first input.
+
+The values from the game matrix are stored in a list named
+{\tt *game-association-list*}. This list is used to calculate the scores at
+the end of the iterated game.
+
+Some sample strategies are given at the end of the program. {\tt
+All-defect} and {\tt poor-trusting-fool} are particularly simple; each
+returns a constant value regardless of the histories. {\tt
+Random-strategy} also ignores the histories and chooses randomly
+between cooperation and defection. You should study {\tt 
+go-by-majority} and {\tt tit-for-tat} to see that their behavior is
+consistent with the descriptions in the previous section.
+
+\paragraph{Problem 0 (no write-up necessary)}
+Use {\tt play-loop} to play games among the five defined strategies.
+Notice how a strategy's performance varies sharply depending on its
+opponent.  For example, {\tt poor-trusting-fool} does quite well
+against {\tt tit-for-tat} or against another {\tt poor-trusting-fool},
+but it loses badly to {\tt all-defect}.  Pay special attention to {\tt
+tit-for-tat}. Notice how it never beats its opponent --- but it never
+loses badly.
+
+\paragraph{Problem 1}
+{\it a.} Games involving {\tt go-by-majority} tend to be slower than
+other games. Why is that so? Use order-of-growth notation to explain
+your answer.
+
+{\it b.} Alyssa P. Hacker, upon seeing the code for {\tt go-by-majority},
+suggested the following iterative version of the procedure:
+
+\beginlisp
+(define (go-by-majority my-history other-history)
+  (define (majority-loop cs ds hist)
+    (cond ((empty-history? hist) (if (> ds cs) 'd 'c))
+          ((eq? (most-recent-play hist) 'c)
+           (majority-loop (1+ cs) ds (rest-of-plays hist)))
+          (else
+           (majority-loop cs (1+ ds) (rest-of-plays hist)))))
+  (majority-loop 0 0 other-history))
+\endlisp
+
+Compare this procedure with the original version. Do the orders of
+growth (in time) for the two procedures differ? Is the newer version
+faster?
+
+\paragraph{Problem 2}
+Write a new strategy {\tt tit-for-two-tats}. The strategy should always
+cooperate unless the opponent defected on both of the previous two
+rounds. (Looked at another way: {\tt tit-for-two-tats} should cooperate if
+the opponent cooperated on either of the previous two rounds.) Play
+{\tt tit-for-two-tats} against other strategies.
+
+\paragraph{Problem 3}
+Write a procedure {\tt make-tit-for-n-tats}. This procedure should
+take a number as input and return the appropriate {\tt
+tit-for-tat}-like strategy.  For example, {\tt (make-tit-for-n-tats
+2)} should return a strategy equivalent to {\tt tit-for-two-tats}.
+
+\paragraph{Problem 4}
+{\it a.} Write a procedure {\tt make-dual-strategy} which takes as
+input two strategies (say, {\tt strat0} and {\tt strat1}) and an
+integer (say, {\tt switch-point}). {\tt Make-dual-strategy} should
+return a strategy which plays {\tt strat0} for the first {\tt
+switch-point} rounds in the iterated game, then switches to {\tt
+strat1} for the remaining rounds.
+
+{\it b.} Use {\tt make-dual-strategy} to define a procedure {\tt
+make-triple-strategy} which takes as input three strategies and two
+switch points.
+
+\paragraph{Problem 5}
+Write a procedure {\tt niceify}, which takes as input a strategy (say,
+{\tt strat}) and a number between 0 and 1 (call it {\tt
+niceness-factor}). The {\tt niceify} procedure should return a
+strategy that plays the same as {\tt strat} except: when {\tt strat}
+defects, the new strategy should have a {\tt niceness-factor}
+chance of cooperating.  (If {\tt niceness-factor} is 0, the returned
+strategy is exactly the same as {\tt strat}; if {\tt niceness-factor}
+is 1, the returned strategy is the same as {\tt poor-trusting-fool}.)
+
+Use {\tt niceify} with a low value for {\tt niceness-factor} --- say,
+0.1 --- to create two new strategies: {\tt slightly-nice-all-defect}
+and {\tt slightly-nice-tit-for-tat}.
+
+\section{The Three-Player Prisoner's Dilemma}
+
+So far, all of our prisoner's dilemma examples have involved two
+players (and, indeed, most game-theory research on the prisoner's
+dilemma has focused on two-player games). But it is possible to create
+a prisoner's dilemma game involving three --- or even more ---
+players.
+
+Strategies from the two-player game do not necessarily extend to a
+three-person game in a natural way. For example, what does {\tt
+tit-for-tat} mean? Should the player defect if {\it either} of the
+opponents defected on the previous round? Or only if {\it both}
+opponents defected? And are either of these strategies nearly as
+effective in the three-player game as {\tt tit-for-tat} is in the
+two-player game?
+
+Before we analyze the three-player game more closely, we must
+introduce some notation for representing the payoffs. We use a
+notation similar to that used for the two-player game. For example, we
+let DCC represent the payoff to a defecting player if both opponents
+cooperate. Note that the first position represents the player under
+consideration. The second and third positions represent the opponents.
+
+Another example: CCD represents the payoff to a cooperating player if
+one opponent cooperates and the other opponent defects.  Since we
+assume a symmetric game matrix, CCD could be written as CDC. The
+choice is arbitrary.
+
+Now we are ready to discuss the payoffs for the three-player game. We
+impose three rules:\footnote{Actually, there is no universal
+definition for the multi-player prisoner's dilemma. The constraints
+used here represent one possible version of the three-player
+prisoner's dilemma.}
+
+\noindent 1) Defection should be the dominant choice for each player.
+In other words, it should always better for a player to defect,
+regardless what the opponents do. This rule gives three constraints:
+
+
+\begin{eqnarray*}
+DCC > CCC  & {\rm (both\ opponents\ cooperate)}\\
+DDD > CDD  & {\rm (both\ opponents\ defect)}\\
+DCD > CCD  & {\rm (one\ opponent\ cooperates,\ one\ defects)}
+\end{eqnarray*}
+
+
+\noindent 2) A player should always be better off if more of his
+opponents choose to cooperate. This rule gives:
+
+\begin{eqnarray*}
+DCC > DCD > DDD \\
+CCC > CCD > CDD
+\end{eqnarray*}
+
+\noindent 3) If one player's choice is fixed, the other two players should be
+left in a two-player prisoner's dilemma. This rule gives the following
+constraints: 
+
+\begin{eqnarray*}
+CCD > DDD \\
+CCC > DCD \\
+CCD > (CDD + DCD) / 2 \\
+CCC > (CCD + DCC) / 2
+\end{eqnarray*}
+
+\begin{eqnarray*}
+CDD = 0 \\
+DDD = 1 \\
+CCD = 3 \\
+DCD = 5 \\
+CCC = 7 \\
+DCC = 9
+\end{eqnarray*}
+
+\paragraph{Problem 6}
+Revise the Scheme code for the two-player game to make a three-player
+iterated game. The program should take three strategies as input, keep
+track of three histories, and print out results for three players. You
+need to change only three procedures: {\tt play-loop}, {\tt
+print-out-results}, and {\tt get-scores}. You also need to change
+{\tt *game-association-list*} as follows:
+
+\beginlisp
+(define *game-association-list*
+  '(((c c c) (7 7 7))
+    ((c c d) (3 3 9))
+    ((c d c) (3 9 3))
+    ((d c c) (9 3 3))
+    ((c d d) (0 5 5))
+    ((d c d) (5 0 5))
+    ((d d c) (5 5 0))
+    ((d d d) (1 1 1))))
+\endlisp
+
+\paragraph{Problem 7}
+{\it a.} Write strategies {\tt poor-trusting-fool-3}, {\tt all-defect-3}, and
+{\tt random-strategy-3} that will work in a three-player game. Try
+them out to make sure your code is working.
+
+{\it b.} Write two new strategies: {\tt tough-tit-for-tat} and {\tt
+soft-tit-for-tat}. {\tt tough-tit-for-tat} should defect if {\it
+either} of the opponents defected on the previous round.  {\tt
+soft-tit-for-tat} should defect only if {\it both} opponents defected
+on the previous round. Play some games using these two new strategies.
+
+\paragraph{Problem 8}
+A natural idea in creating a prisoner's dilemma strategy is to
+try and deduce what kind of strategies the {\it other} players might
+be using. In this problem, we will implement a simple version of
+this idea.
+
+First, we need a procedure that takes three histories as arguments:
+call them {\tt hist-0}, {\tt hist-1}, and {\tt hist-2}. The idea is
+that we wish to characterize the strategy of the player responsible
+for {\tt hist-0}. Our procedure will return a list of three numbers:
+the probability that the {\tt hist-0} player cooperates given that the
+other two players cooperated on the previous round, the probability
+that the {\tt hist-0} player cooperates given that only one other
+player cooperated on the previous round, and the probability that the
+{\tt hist-0} player cooperates given that both others defected on the
+previous round. To fill out some details in this picture, let's look
+at a couple of examples. We will call our procedure {\tt
+get-probability-of-c}; here are a couple of sample calls.
+
+\beginlisp
+==> (get-probability-of-c '(c c c c) '(d d d c) '(d d c c))
+(1 1 1)
+\null
+==> (get-probability-of-c '(c c c d c) '(d c d d c) '(d c c c c))
+(0.5 1 ())
+\endlisp
+
+In the top example, the returned list indicates that the first player
+cooperates with probability 1 no matter what the other two players do.
+In the bottom example, the first player cooperates with probability
+0.5 when the other two players cooperate; the first player cooperates
+with probability 1 when one of the other two players defects; and
+since we have no data regarding what happens when both other players
+defect, our procedure returns {\tt ()} for that case.
+
+Write the {\tt get-probability-of-c} procedure. Using this procedure,
+you should be able to write some predicate procedures that help
+in deciphering another player's strategy. For instance, here are
+two possibilities:
+
+\beginlisp
+(define (is-he-a-fool? hist0 hist1 hist2)
+  (equal? '(1 1 1) (get-probability-of-c hist0 hist1 hist2)))
+\null
+(define (could-he-be-a-fool? hist0 hist1 hist2)
+  (equal? (list true true true)
+          (map (lambda (elt) (or (null? elt) (eqv? elt 1)))
+               (get-probability-of-c hist0 hist1 hist2))))
+\endlisp
+
+Use the {\tt get-probability-of-c} procedure to write a predicate that
+tests whether another player is using the {\tt soft-tit-for-tat}
+strategy from Problem 7. Also, write a new strategy named {\tt
+dont-tolerate-fools}.  This strategy should cooperate for the first
+ten rounds; on subsequent rounds it checks (on each round) to see
+whether the other players might both be playing {\tt
+poor-trusting-fool}.  If our strategy finds that both other players
+seem to be cooperating uniformly, it defects; otherwise, it
+cooperates.
+
+\paragraph{Problem 9}
+Write a procedure {\tt make-combined-strategies} which takes as input
+two {\it two-player} strategies and a ``combining'' procedure.  {\tt
+Make-combined-strategies} should return a {\it three-player} strategy
+that plays one of the two-player strategies against one of the
+opponents, and the other two-player strategy against the other
+opponent, then calls the ``combining'' procedure on the two two-player
+results. Here's an example: this call to {\tt
+make-combined-strategies} returns a strategy equivalent to {\tt
+tough-tit-for-tat} in Problem 7.
+
+\beginlisp
+(make-combined-strategies
+  tit-for-tat tit-for-tat
+  (lambda (r1 r2) (if (or (eq? r1 'd) (eq? r2 'd)) 'd 'c)))
+\endlisp
+
+The resulting strategy plays {\tt tit-for-tat} against each
+opponent, and then calls the combining procedure on the two results.
+If either of the two two-player strategies has returned {\tt d}, then
+the three-player strategy will also return {\tt d}.
+
+Here's another example. This call to {\tt make-combined-strategies}
+returns a three-player strategy that plays {\tt tit-for-tat} against
+one opponent, {\tt go-by-majority} against another, and chooses randomly
+between the two results:
+
+\beginlisp
+(make-combined-strategies
+  tit-for-tat go-by-majority
+  (lambda (r1 r2) (if (= (random 2) 0) r1 r2)))
+\endlisp
+
+
+\section{Extra Credit: The Three-Player Prisoner's Dilemma Tournament}
+
+As decribed earlier, Axelrod held two computer tournaments to
+investigate the two-player prisoner's dilemma. Last semester, 6.001
+students made game theory history by participating in the world's
+first THREE-player prisoner's dilemma tournament. Now, in a return
+engagement, the second-ever three-player tournament will be held.
+
+Last semester's results indicated that basically cooperative
+strategies do very well. The winning strategy, for instance,
+defected only if both opponents had each defected twice in a row. And
+the third place strategy (out of more than fifty entries) was simply
+{\tt poor-trusting-fool-3}!
+
+You can participate this year by designing a strategy for the
+tournament. You might submit one of the strategies developed in the
+problem set, or develop a new one. The only restriction is that the
+strategy must work against any other legitimate entry. Any strategies
+that cause the tournament software to crash will be disqualified.
+
+Instructions for entering your strategy in the tournament will be
+provided on a separate handout and posted in the laboratory.
+
+\end{document}
+

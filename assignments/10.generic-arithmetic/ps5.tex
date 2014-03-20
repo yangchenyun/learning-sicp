@@ -1,0 +1,669 @@
+\tracingmacros=3
+
+% Document Type: LaTeX
+% Master File: meyer-ps5.tex
+%\input /zu/6001-devel/6001mac
+\input ../6001mac
+
+\newcommand{\Code}[1]{\mbox{\tt #1}}
+
+\outer\def\beginlispbig{%
+  \begin{minipage}[t]{\linewidth}
+  \begin{list}{$\bullet$}{%
+    \setlength{\topsep}{0in}
+    \setlength{\partopsep}{0in}
+    \setlength{\itemsep}{0in}
+    \setlength{\parsep}{0in}
+    \setlength{\leftmargin}{1.5em}
+    \setlength{\rightmargin}{0in}
+    \setlength{\itemindent}{0in}
+  }\item[]
+  \obeyspaces
+  \obeylines \tt}
+
+
+\def\fbox#1{%
+  \vtop{\vbox{\hrule%
+     \hbox{\vrule\kern3pt%
+ \vtop{\vbox{\kern3pt#1}\kern3pt}%
+ \kern3pt\vrule}}%
+ \hrule}}
+
+\let\to\rightarrow
+\let\union\cup
+\let\cross\times
+
+
+\def\SI{\mbox{Sch-\-Int}}
+\def\SNat{\mbox{Sch-\-NatNum}}
+%\def\SNI{\mbox{Sch-\-Nonneg-\-Int}}
+\def\SN{\mbox{Sch-\-Num}}
+\def\SB{\mbox{Sch-\-Bool}}
+\def\Empty{\mbox{Empty}}
+\def\SI{\mbox{Sch-\-Int}}
+\def\SSYM{\mbox{Sch-\-Symbol}}
+\def\GN{\mbox{Generic-\-Num}}
+\def\RN{\mbox{RepNum}}
+\def\RR{\mbox{RepRat}}
+\def\RP{\mbox{RepPoly}}
+\def\RT{\mbox{RepTerm}}
+\def\RTS{\mbox{RepTerms}}
+\def\TL{\List(\RT)}
+\def\Var{\mbox{Variable}}
+\def\RP{\mbox{RepPoly}}
+\def\Empty{\mbox{Empty-type}}
+\def\List{\mbox{List}}
+% \def\nill{\mbox{nil}}
+\def\GOP2{\mbox{Gen-binary-op}}
+
+\def\numtag{\Code{number}}
+\def\rattag{\Code{rational}}
+\def\polytag{\Code{polynomial}}
+
+\begin{document}
+\psetheader{Sample Problem Set}{Math Set}
+\begin{center}\large
+{\bf A Generic Arithmetic Package}
+\end{center}
+
+\medskip
+
+\noindent
+This problem set is based on Sections 2.5 and 2.6 of the notes, which
+discuss a generic arithmetic system that is capable of dealing with
+rational functions (quotients of polynomials).  You should study and
+understand these sections and also carefully read and think about this
+handout before attempting to solve the assigned problems.
+
+There is a larger amount of code for you to manage in this problem set
+than in previous ones.  Furthermore, the code makes heavy use of
+data-directed techniques.  We do not intend for you to study it all---and
+you may run out of time if you try.  This problem set will give you an
+opportunity to acquire a key professional skill: mastering the code {\em
+organization} well enough to know what you need to understand and what you
+don't need to understand.
+
+Be aware that in a few places, which will be explicitly noted below,
+this problem set modifies (for the better!) the organization of the
+generic arithmetic system described in the text.
+
+\section{Generic Arithmetic}
+
+The generic arithmetic system consists of a number of pieces. The
+complete code is attached at the end of the handout.  All of this code
+will be loaded into Scheme when you load the files for this problem
+set.  You will not need to edit any of it.  Instead you will augment
+the system by adding procedures and installing them in the system.
+
+Hand in your PreLab work, computer listings of all the procedures you
+write in lab, and transcripts showing that the required functionality
+was added to the system.  The transcript should include enough tests
+to exercise the functionality of your modifications and to demonstrate
+that they work properly.
+
+\subsection{The basic generic arithmetic system} There are three kinds,
+or {\em subtypes}, of generic numbers in the system of this Problem Set:
+generic ordinary numbers, generic rational numbers, and generic
+polynomials.  Elements of these subtypes are tagged items with one of
+the tags \numtag, \rattag, or \polytag, followed by a data structure
+representing an element of the corresponding subtype.  For example, a
+generic ordinary number has tag \numtag\ and another part, called its
+{\em contents}, which represents an ordinary number.
+
+We can summarize this in a type equation:
+\[\GN = (\{\numtag\}\cross \RN) \union (\{\rattag\}\cross \RR) \union
+        (\{\polytag\}\cross \RP).\]
+
+The type tagging mechanism is the simple one described on p.\ 165 of the
+text, and the \Code{apply-generic} is the one {\em without coercions}
+described in section 2.5.3.  The code for these is in \Code{types.scm}.
+
+We will also assume that the commands {\tt put} and {\tt get} are
+available to automagically update the table of methods around which the
+system is designed.  You needn't be concerned in this problem set how {\tt
+put} and {\tt get} are implemented\footnote{This will be explained when we
+come to section 3.3.3 of the Notes.}.
+
+Some familiar arithmetic operations on generic numbers are
+
+\beginlisp
+(define (add x y) (apply-generic 'add x y))
+(define (sub x y) (apply-generic 'sub x y))
+(define (mul x y) (apply-generic 'mul x y))
+(define (div x y) (apply-generic 'div x y))
+\endlisp
+These are all of type $(\GN,\GN) \to \GN$.  We also have
+
+\beginlisp
+(define (negate x) (apply-generic 'negate x))
+\endlisp
+of type $\GN \to \GN$, and
+
+\beginlisp
+(define (=zero? x) (apply-generic '=zero? x))
+\endlisp
+of type $\GN \to \SB$.
+
+Using these operations, compound generic operations can be
+defined, such as
+
+\beginlisp
+(define (square x) (mul x x))
+\endlisp
+
+
+\subsection{Packages}
+The code for the generic number system of this problem set has been
+organized in \Code{ps5-code.scm} into groups of related definitions
+labelled as ``packages.''  A package generally consists of all the
+procedures for handling a particular type of data, or for handling the
+interface between packages.
+
+The packages described in the text are enclosed in a package installation
+procedure that sets up internal definitions of the procedures in the
+package.  An example is \Code{the-number-package} on p.\ 178.  This
+ensures there will be no conflict if a procedure with the same name is
+used in another package, allowing packages to be developed separately with
+minimal coordination of naming conventions.
+
+In this assignment it will be more convenient {\em not} to enclose the
+packages into internal definitions.  Instead, the code is laid out
+textually in packages, but essentially everything is defined at ``top
+level.''  You will see that we have therefore been careful to choose
+different names for corresponding procedures in different packages, e.g.,
+\Code{+} which adds in the number package and \Code{+poly} which adds in
+the polynomial package.
+
+
+\subsection{Ordinary numbers}
+To install ordinary numbers, we must first decide how they are to be
+represented.  Since Scheme already has an elaborate system for
+handling numbers, the most straightforward thing to do is to use it,
+namely, let
+\[\RN = \SN.\]
+This allows us to define the methods that handle generic ordinary
+numbers simply by calling the Scheme primitives \Code{+}, \Code{-},
+\ldots, as in section 2.6.1.  So we can immediately define interface
+procedures between \RN's and the Generic Number System:
+
+\beginlisp
+(define (+number x y) (make-number (+ x y)))
+(define (-number x y) (make-number (- x y)))
+(define (*number x y) (make-number (* x y)))
+(define (/number x y) (make-number (/ x y)))
+\endlisp
+These are of type $(\RN, \RN) \to (\{\numtag\}\cross\RN)$.  Also,
+
+\beginlisp
+(define (negate-number x) (make-number (- x)))
+\endlisp
+of type $\RN \to (\{\numtag\}\cross\RN)$,
+
+\beginlisp
+(define (=zero-number? x) (= x 0))
+\endlisp
+of type $\RN \to \SB$, and
+
+\beginlisp
+(define (make-number x) (attach-tag 'number x))
+\endlisp
+of type $\RN \to (\{\numtag\}\cross\RN)$.
+
+All but the last of these procedures get installed in the table as methods
+for handling generic ordinary numbers:
+
+\beginlisp
+(put 'add '(number number) +number)
+(put 'sub '(number number) -number)
+(put 'mul '(number number) *number)
+(put 'div '(number number) /number)
+(put 'negate '(number) negate-number)
+(put '=zero? '(number) =zero-number?)
+\endlisp
+
+The number package should provide a means for a user to create generic
+ordinary numbers, so we include a user-interface procedure\footnote{In
+Exercise 2.76 in the text, the implementation of the type tagging system
+is modified to maintain the illlusion that generic ordinary numbers have a
+\numtag\ tag, without actually attaching the tag to Scheme numbers.  This
+implementation has the advantage that generic ordinary numbers are
+represented exactly by Scheme numbers, so there is no need to provide the
+user-interface procedure \Code{create-number}.  Note that in Section 6
+following Exercise 2.76, the text implicitly assumes that this revised
+implementation of tags has been installed.  In this problem set we stick
+to the straightforward implementation with actual \numtag\ tags.} of type
+$\SN \to (\{\numtag\}\cross\RN)$, namely,
+\beginlisp
+(define (create-number x) (attach-tag 'number x))
+\endlisp
+
+\paragraph{Exercise 5.1A}
+The generic equality predicate
+\[\Code{equ?}:(\GN,\GN) \to \SB\]
+is supposed to test equality of its arguments.  Define an \Code{=number}
+procedure in the Number Package suitable for installation as a method
+allowing generic \Code{equ?} to handle generic ordinary numbers.  Include
+the type of \Code{=number} in comments accompanying your definition.
+
+\paragraph{Lab exercise 5.1B}
+Install {\tt equ?} as an operator on numbers in the generic arithmetic
+package.  Test that it works properly on generic ordinary numbers.
+
+
+\subsection{Rational numbers}
+
+The second piece of the system is a Rational Number package like the one
+described in section 2.1.1.  The difference is that the arithmetic
+operations used to combine numerators and denominators are {\em generic}
+operations, rather than the primitive {\tt +}, {\tt -}, etc.  This
+difference is important, because it allows ``rationals'' whose numerators
+and denominators are arbitrary generic numbers, rather than only integers
+or ordinary numbers.  The situation is like that in Section 2.6.3 in which
+the use of generic operations in {\tt +terms} and {\tt *terms} allowed
+manipulation of polynomials with arbitrary coefficients.
+
+We begin by specifying the representation of rationals as {\em pairs} of
+\GN's:
+\[\RR = \GN\cross\GN\]
+with constructor
+
+\beginlisp
+(define (make-rat numerator denominator)
+  (cons numerator denominator))
+\endlisp
+of type $\GN, \GN \to \RR$, and selectors
+
+\beginlisp
+(define numer car)
+(define denom cdr)
+\endlisp
+
+Note that {\tt make-rat} does not reduce rationals to lowest terms as in
+Section 2.1.1, because {\tt gcd} makes sense only in certain cases---such
+as when numerator and denominator are integers---but we are allowing
+arbitrary numerators and denominators.
+
+Now we define basic procedures of type $(\RR, \RR) \to \RR$ within the
+Rational Number package:
+
+\beginlisp
+(define (+rat x y)
+  (make-rat (add (mul (numer x) (denom y))
+                 (mul (denom x) (numer y)))
+            (mul (denom x) (denom y))))
+
+(define (-rat x y)
+  (make-rat (sub (mul (numer x) (denom y))
+                 (mul (denom x) (numer y)))
+            (mul (denom x) (denom y))))
+
+(define (*rat x y)
+  (make-rat (mul (numer x) (numer y))
+            (mul (denom x) (denom y))))
+
+(define (/rat x y)
+  (make-rat (mul (numer x) (denom y))
+            (mul (denom x) (numer y))))
+\endlisp
+There is also
+
+\beginlisp
+(define (negate-rat x)
+  (make-rat (negate (numer x))
+            (denom x)))
+\endlisp
+of type $\RR \to \RR$,
+
+\beginlisp
+(define (=zero-rat? x)
+  (=zero? (numer x)))
+\endlisp
+of type $\RR \to \SB$, and finally,
+
+\beginlisp
+(define (make-rational x) (attach-tag 'rational x))
+\endlisp
+of type $\RR \to (\{\rattag\}\cross\RR)$.
+
+Next, we provide the interface between the Rational package and the
+Generic Number System, namely the methods for handling rationals.
+
+\beginlisp
+(define (+rational x y) (make-rational (+rat x y)))
+(define (-rational x y) (make-rational (-rat x y)))
+(define (*rational x y) (make-rational (*rat x y)))
+(define (/rational x y) (make-rational (/rat x y)))
+\endlisp
+of type $(\RR, \RR) \to (\{\rattag\}\cross\RR)$,
+
+\beginlisp
+(define (negate-rational x) (make-rational (negate-rat x)))
+\endlisp
+of type $\RR \to (\{\rattag\}\cross\RR)$, and
+
+\beginlisp
+(define (=zero-rational? x) (=zero-rat? x))
+\endlisp
+of type $\RR \to \SB$.
+
+To install the rational methods in the generic operations table, we evaluate
+
+\beginlisp
+(put 'add '(rational rational) +rational)
+(put 'sub '(rational rational) -rational)
+(put 'mul '(rational rational) *rational)
+(put 'div '(rational rational) /rational)
+
+(put 'negate '(rational) negate-rational)
+(put '=zero? '(rational) =zero-rational?)
+\endlisp
+
+The Rational Package should also provide a means for a user to create
+Generic Rationals, so we include an external procedure of type
+$(\GN,\GN) \to (\{\rattag\}\cross\RR)$, namely,
+
+\beginlisp
+(define (create-rational x y)
+   (make-rational (make-rat x y)))
+\endlisp
+
+
+\paragraph{Exercise 5.2}
+Produce expressions that define {\tt r5/13} to be the rational number $5/13$
+and {\tt r2} to be the rational number $2/1$.  Assume that the expression
+\beginlisp
+(define rsq (square (add r5/13 r2)))
+\endlisp
+is evaluated.  Draw a box and pointer diagram that represents {\tt rsq}.
+
+\paragraph{Exercise 5.3A}
+Define a predicate {\tt equ-rat?} inside the Rational package that tests
+whether two rationals are equal.  What is its type?
+
+\paragraph{Exercise 5.3B} Install the relevant method in the generic
+arithmetic package so that {\tt equ?} tests the equality of two generic
+rational numbers as well as two generic ordinary numbers.  Test that {\tt
+equ?} works properly on both subtypes of generic numbers.
+
+
+\paragraph{Operations across Different Types}
+At this point all the methods installed in our system require all operands
+to have the subtype---all \numtag, or all \rattag.  There are no methods
+installed for operations combining operands with distinct subtypes.  For
+example,
+
+\beginlisp
+(define n2 (create-number 2))
+(equ? n2 r2)
+\endlisp
+will return a ``no method'' error message because there is no equality
+method at the subtypes (\numtag\ \rattag).  We have not built into the
+system any connection between the number 2 and the rational $2/1$.
+
+Some operations across distinct subtypes are straightforward.  For
+example, to combine a rational with a number, $n$, coerce $n$ into the
+rational $n/1$ and combine them as rationals.
+
+\paragraph{Exercise 5.4A}
+Define a procedure
+\[\Code{repnum->reprat}: \RN \to \RR\]
+which coerces $n$ into $n/1$.
+
+Now, for any type, $T$, you can obtain a
+\[(\RN,\RR) \to T\]
+method from a
+\[(\RR,\RR) \to T\]
+method by applying the procedure \Code{RRmethod->NRmethod}:
+
+\beginlisp
+(define (RRmethod->NRmethod method)
+  (lambda (num rat)
+    (method
+     (repnum->reprat num)
+     rat)))
+\endlisp
+
+Use \Code{RRmethod->NRmethod} to define methods for generic \Code{add},
+\Code{sub}, \Code{mul}, and \Code{div} at argument types (\numtag\
+\rattag).  Define methods for these operations at argument types (\rattag\
+\numtag).  Also define \Code{equ?} these argument types.
+
+\paragraph{Exercise 5.4B}
+Install your new methods.  Test them on \Code{(equ?\ n2 r2)} and
+\[\Code{(equ?\ (sub (add n2 r5/13) r5/13) n2)}\]
+
+
+\subsection{Polynomials}
+The Polynomial package defines methods for handling generic polynomials
+which are installed by
+
+\beginlisp
+(put 'add '(polynomial polynomial) +polynomial)
+(put 'mul '(polynomial polynomial) *polynomial)
+(put '=zero? '(polynomial) =zero-polynomial?)
+\endlisp
+
+The package also includes an external procedure so the user can construct
+generic polynomials.  Namely,
+\[\Code{create-polynomial}: (\Var, \List(\GN)) \to (\{\polytag\}\cross
+\RP)\]
+constructs generic polynomials from a variable and the list of
+coefficients starting at the high order term (this is the preferred
+representation for {\em dense} polynomials described in Section 2.6.3).
+
+Within the Polynomial package, polynomials are represented by {\em
+abstract} term lists, using the list format preferred for {\em sparse}
+polynomials as described in Section 2.6.3.  These abstract term lists are
+not necessarily Scheme lists, but have their own constructors and
+selectors.  (They are, in fact, implemented as ordinary lists in
+\Code{ps5-code.scm}, but the abstraction makes it easier to change to a
+possibly more efficient term list representation without changing code
+outside the Term List package.)  So we have the type equations
+\begin{eqnarray*}
+\RP  & = & \Var\cross\RTS\\
+\RTS  & = & \mbox{Empty-Term-List}  \union  (\RT \cross \RTS)\\
+\RT & = & \SNat \cross \GN
+\end{eqnarray*}
+with term list constructors
+\begin{eqnarray*}
+\Code{the-empty-termlist} &:& \Empty \to \RTS\\
+\Code{adjoin-term} &:& (\RT, \RTS) \to \RTS,
+\end{eqnarray*}
+and selectors \Code{first-term} and \Code{rest-terms}\footnote{The \Empty\
+has no elements.  The type statement
+\[\Code{make-an-element} : \Empty \to T\]
+indicates that the procedure \Code{make-an-element} take no arguments, and
+evaluating \Code{(make-an-element)} returns a value of type $T$.  Such
+procedures are sometimes called ``thunks.''  There wasn't any special need
+to use a thunk as constructor for empty term lists---a constant equal to
+the empty term list would have served as well (better? \Code{:-)})---but
+it serves as a reminder that term lists are created differently than
+Scheme's lists.}.
+
+In this problem set, we do modify the definition of
+\Code{*-term-by-all-terms} given on p.\ 193 of the test.  The new
+definition is:
+
+\beginlisp
+(define (*-term-by-all-terms t1 tlist)
+  (map-terms
+   (lambda (term) (*term t1 term))
+   tlist))
+\null
+(define (*term t1 t2)
+  (make-term
+   (+ (order t1) (order t2))
+   (mul (coeff t1) (coeff t2))))
+\endlisp
+
+\paragraph{Exercise 5.5A}
+What is the type of the procedure \Code{map-terms}?  Supply its
+definition.
+
+\paragraph{Exercise 5.5B}
+Define a procedure \Code{create-numerical-polynomial} which, given a
+variable name, \Code{x}, and list of \SN, returns a generic
+polynomial in \Code{x} with the list as its coefficients.
+
+Use \Code{create-numerical-polynomial} to define \Code{p1} to be the
+generic polynomial \[p_1(x) = x^3 + 5x^2 + -2.\]
+
+\paragraph{Exercise 5.5C}
+Evaluate your definition of \Code{map-terms}, thereby completing the
+definition of multiplication of generic polynomials.  Use the generic {\tt
+square} operator to compute the square of \Code{p1}, and the square of
+its square.  Turn in the the {\bf pretty-printed} results of the
+squarings, as computed in lab.
+
+
+\medskip
+
+There are still few methods installed which work with operands of
+mixed types.  This means that generic arithmetic on polynomials with
+generic coefficients of different types is likely to fail.  For example, a
+representation of the polynomial $p_{2}(z,x) = p_{1}(x)z^{2} + 3z + 5$ is
+defined in buffer \Code{ps5-ans.scm} as:
+
+\beginlisp
+(define p2-mixed
+  (create-polynomial
+   'z
+   (list
+    p1
+    (create-number 3)
+    (create-number 5))))
+\endlisp
+Now squaring \Code{p2-mixed} will generate a ``no method'' error message,
+because there is no method for multiplying the numerical coefficients
+3 and 5 by the polynomial coefficient \Code{p1}.  A definition which
+will work better in our system would be to replace 3 and 5 by the
+corresponding constant polynomials in \Code{x}:
+
+\beginlisp
+(define p2
+  (create-polynomial
+   'z
+   (list
+    p1
+    (create-polynomial 'x (list (create-number 3))
+    (create-polynomial 'x (list (create-number 5)))))))
+\endlisp
+
+\paragraph{Exercise 5.6A}
+Use \Code{create-rational} and \Code{create-numerical-polynomial} to
+define the following rationals whose numerators and denominators are
+polynomials in \Code{y}:
+\[3/y,\ (y^{2}+1)/y,\ 1/(y + -1),\ 2\]
+Then define a useful representation for $p_3(x,y)=(3/y)x^4 +
+((y^{2}+1)/y)x^2 + (1/(y + -1))x + 2$.
+
+\paragraph{Exercise 5.6B}
+Use the generic {\tt square} operator to compute the square of \Code{p2}
+and \Code{p3}, and the square of the square of \Code{p2}.  Turn in the
+definitions you typed to create \Code{p3} and the {\bf pretty-printed}
+results of the squarings, as computed in lab.
+
+
+\subsection{Completing the polynomial package}
+
+If you construct a chart of the dispatch table we have been building, you
+will see that there are some unfilled slots dealing with polynomials.
+Notably, the generic {\tt negate} and {\tt sub} operations do not know how
+to handle polynomials.  (There is also no method for polynomial {\tt div},
+but this is more problematical since polynomials are not closed under
+division, e.g., dividing $x+1$ by $x^2$ yields a {\em rational function}
+\[\frac{x+1}{x^2}\] which is not equivalent to any polynomial.)
+
+\paragraph{Exercise 5.7A} Use the procedure \Code{map-terms} to
+write a procedure \Code{negate-terms} that negates all the terms of a term
+list.  Then use \Code{negate-terms} to define a procedure
+\Code{negate-poly}, and a method \Code{negate-polynomial}.  Include the
+types in the comments accompanying your code.
+
+\paragraph{Exercise 5.7B}
+Using the {\tt negate-poly} procedure you created in exercise 5.7A, and the
+procedure {\tt +poly}, implement a polynomial subtraction procedure {\tt -poly},
+and a method {\tt -polynomial}.  Use {\tt -poly} and \Code{=zero-poly?} to
+implement \Code{equ-poly?} and \Code{equ-polynomial?}
+
+\paragraph{Exercise 5.7C}
+Install \Code{negate-polynomial} in the table as the generic {\tt negate}
+method for polynomials.  Install {\tt -polynomial} and
+\Code{equ-polynomial?} as the generic {\tt sub} and \Code{equ?} operations
+on polynomials.  Test your procedures on the polynomials \Code{p1},
+\Code{p2}, and \Code{p3} of exercises 5.5 and 5.6.
+
+\subsection{More Operations across Different Types}
+To combine a polynomial, $p$, with a number, we coerce the number into a
+constant polynomial over the variable of $p$, and combine them as
+polynomials.
+
+\paragraph{Exercise 5.8A}
+Define a procedure $\Code{repnum->reppoly}: (\Var, \RN) \to \RP$ which
+coerces $n$ into a constant polynomial $n$ over a given variable.  Define
+methods for generic \Code{add}, \Code{sub}, \Code{mul} and \Code{equ?} at
+types (\numtag\ \polytag) and (\polytag\ \numtag), and for generic
+\Code{div} at types (\polytag\ \numtag).
+
+\paragraph{Lab exercise 5.8B}
+Install your new methods.  Test them on \Code{(square p2-mixed)}
+and \[\Code{(equ?\ (sub (add p1 p3) p1) p3)}.\]
+
+\paragraph{Exercise 5.8C} To multiply a rational by a number, it
+was ok to coerce the number $n$ into the rational $n/1$.  Give an example
+illustrating why handling multiplication of a polynomial and a
+rational by coercing the polynomial $p$ into the rational $p/1$ is not
+always a good thing to do.  How about coercing the rational into a
+constant polynomial over the variable of $p$?
+
+
+\subsection{Polynomial Evaluation}
+Polynomials are generic numbers on the one hand, but on the other hand,
+they also describe {\em functions} which can be applied to generic
+numbers.  For example, the polynomial $p_1(x) = x^3 + 5x^2 - 2$ evaluates
+to 26 when $x=2$.  Similarly, when $z = x+1$, the polynomial $p_2(z,x)$
+evaluates to the polynomial
+\[x^5 + 7x^4 + 11x^3 + 3x^2 - x + 6.\]
+
+It is easy to define an \Code{apply-polynomial} procedure:
+
+\beginlisp
+(define (apply-term t gn)
+  (mul (coeff t)
+       (power gn (order t))))
+\endlisp
+
+\beginlisp
+(define (power gn k)
+  (if (< k 1)
+      (create-number 1)
+      (mul gn (power gn (dec 1)))))
+\endlisp
+
+\beginlisp
+(define (apply-terms terms gn)
+  <**blob5.9A**>)
+\endlisp
+
+\beginlisp
+(define (apply-polynomial p gn)
+  (apply-terms
+   (term-list (contents p))
+   gn))
+\endlisp
+
+\paragraph{Exercise 5.9A}
+Fill in  \Code{<**blob5.9A**>} to complete the definition of \Code{apply-terms}.
+
+\paragraph{Exercise 5.9B}
+Test your definition by applying $p_1$ to 2, $p_2$ to $x+1$, and verifying
+
+\beginlisp
+(define x (create-numerical-polynomial 'x '(1 0)))
+(equ? (apply-polynomial p1 x) p1)
+\endlisp
+
+\end{document}
+
+
+

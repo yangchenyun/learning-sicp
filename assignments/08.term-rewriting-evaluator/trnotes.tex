@@ -1,0 +1,841 @@
+\documentclass[11pt]{article}
+\usepackage{6001}
+\usepackage{time,fullpage}
+\usepackage{amsmath}
+\usepackage{../epsfig}
+%\input ../6001mac
+
+\textheight 8in
+
+\oddsidemargin 11pt
+\evensidemargin \oddsidemargin
+\marginparwidth 0.5in
+
+\advance\textwidth by -2\oddsidemargin
+
+\newdimen\tablewidth
+\tablewidth=\textwidth
+\advance \tablewidth by -11pt
+
+\parindent 0.0in
+\parskip \medskipamount
+
+\let\to\rightarrow
+\let\union\cup
+\let\cross\times
+
+\def\SI{\mbox{Scheme-Integer}}
+\def\SNI{\mbox{Scheme-Nonneg-Integer}}
+\def\SN{\mbox{Sch-\-Num}}
+\def\SB{\mbox{Sch-Bool}}
+\def\Empty{\mbox{Empty}}
+\def\SI{\mbox{Sch-Int}}
+\def\SNI{\mbox{Sch-Nonneg-Int}}
+
+
+\makeatletter
+
+\def\DefineBNFAbbrev#1#2{%
+    \expandafter\newcommand\expandafter{\csname#1\endcsname}{\@bnfabbrev{#2}}%
+}
+
+\def\@bnfabbrev#1{%
+    \@ifnextchar _{\@subabbrev{#1}}{\@plainabbrev{#1}}%
+}
+
+\def\@subabbrev#1_#2{\hbox{\normalfont$\langle\mbox{#1}_{#2}\rangle$}}
+
+\def\@plainabbrev#1{\hbox{\normalfont$\langle\mbox{#1}\rangle$}}
+
+% \def\exp{\hbox{$\bnf <expression>$}}
+
+\DefineBNFAbbrev{expr}{expression}
+\DefineBNFAbbrev{define}{define}
+\DefineBNFAbbrev{defines}{defines}
+\DefineBNFAbbrev{vrbl}{variable}
+\DefineBNFAbbrev{bod}{body}
+\DefineBNFAbbrev{init}{init}
+\DefineBNFAbbrev{val}{value}
+\DefineBNFAbbrev{pval}{primitive\ value}
+\DefineBNFAbbrev{ival}{immediate\ value}
+\DefineBNFAbbrev{test}{test}
+\DefineBNFAbbrev{orsf}{or}
+\DefineBNFAbbrev{andsf}{and}
+%\DefineBNFAbbrev{beginsf}{begin}
+
+\makeatletter
+
+
+\def\fbox#1{%
+  \vtop{\vbox{\hrule%
+     \hbox{\vrule\kern3pt%
+ \vtop{\vbox{\kern3pt#1}\kern3pt}%
+ \kern3pt\vrule}}%
+ \hrule}}
+
+
+\begin{document}
+
+\psetheader{Spring Semester, 1995}{Supplementary Notes}
+\begin{center}\large
+{\bf A Term Rewriting Model for Scheme}
+\end{center}
+
+\medskip
+
+
+\begin{flushleft}
+Issued:  Tuesday, 7 March, 1995\\
+\end{flushleft}
+
+\section{Substitution Models}
+
+A useful way to think about computation in Scheme is as {\em algebraic
+  simplification\/} aimed at computing the value of an expression by
+successively simplifying its subexpressions.  The use of names for terms
+is also a familiar part of arithmetic/algebraic manipulation, as in,
+\begin{quote}
+Let $p(x) = x^{2}-1$, then the polynomial $p$ factors into
+$p_{1}\cdot p_{2}$ where $p_{1}(x) = x + 1$ and $p_{2}(x) = x - 1$.
+\end{quote}
+Naming rules are usually not spelled out in studying algebra, but in
+Scheme, as in all programming languages, such rules play a key
+role---arguably a more important one than the ordinary algebraic rules.  A
+system of rules which explain Scheme computation in terms of symbolic
+manipulation of Scheme expressions and definitions is called a {\em
+Substitution Model} for Scheme.
+
+For example, the {\em variable instantiation} rule is a basic naming rule:
+\begin{quote}
+replace an occurrence of a variable by the expression it names.
+\end{quote}
+Implicit in this rule is a simple recipe for figuring out what expression
+a variable names: starting at the variable to be instantiated, search back
+through the expression tree until you come to a definition of that
+variable.
+
+In the Substitution Model sketched in 6.001 lectures and text, there is
+also a particular {\em substitution rule} for handling procedure
+application.  In the case of a one argument procedure, the substitution
+rule is:
+\begin{quote}
+rewrite ``\Code{((lambda ($x$) $B$) $V$)}'' as ``$B$ with $V$ substituted
+for $x$''.
+\end{quote}
+
+In these notes we describe a slightly different rule for procedure
+application.  The Substitution Model using this new rule dramatically
+shortens the size of expressions to be manipulated in many examples.
+It also will allow us to model Scheme's computational behavior much
+more accurately\footnote{The Substitution Model in the text is
+  sketchily described (on purpose, to avoid distracting beginners with
+  details).  The most straightforward ways of spelling out the details
+  lead to models which have to be abandoned altogether when we
+  introduce side-effects.  Side-effects are explained in Chapter 3 of
+  the text with a new {\em environment model}.  You won't have to
+  unlearn the new Substitution Model described in these Supplementary
+  Notes, because it extends to handle side-effects quite well.  In
+  fact, the environment model can usefully be understood as a way to
+  {\em implement} the new Substitution Model efficiently.}.
+
+We'll simply call the new rule the {\em lambda application rule}.  In the
+one argument case, it is:
+\begin{quote}
+rewrite ``\Code{((lambda ($x$) $B$) $V$)}'' as ``$B$''\\
+while adding the definition ``\Code{(define $x$ $V$)}.''
+\end{quote}
+Of course to use this rule, we'll need to specify where and how to ``add''
+definitions.
+
+It's helpful to realize that the new lambda application rule could be used
+to simulate the old rule: starting with \Code{((lambda ($x$) $B$) $V$)},
+use the lambda application rule.  This gives $B$ along with the definition
+\Code{(define $x$ $V$)}.  Then, by successively instantiating all the
+$x$'s in $B$ by copies of $V$, we arrive at the same result as the
+substitution rule.  Well almost---we still have the definition of $x$
+hanging around.  But since we instantiated all the $x$'s, this definition
+no longer refers to anything and is not needed.  So we will apply a new
+rule which allows us to remove unreferenced definitions.
+
+\subsection{Syntactic Values}
+
+We said that the point of Substitution Model rewrite rules is to arrive at
+the value of an expression.  More precisely, the aim is to arrive at some
+standardized, syntactic representation called the {\em syntactic value} of
+the expression.  Before examining the rules in detail, we should have a
+clear picture of what syntactic values look like.
+
+The most familiar syntactic values are the {\em primitive values}.  These
+are objects like numbers or truth values which have standard
+representations printable as output.
+
+Scheme provides dozens of {\em primitive procedure variables} like
+\Code{+}, \Code{<}, \Code{atan}, or \Code{not} which can be applied to
+primitive values.  These primitive procedure variables will also be
+syntactic values\footnote{We assume here that primitive procedure
+variables won't be redefined!  In fact, according to the official
+definition of \RFS, it is possible to redefine them.  In creating 6.001
+Scheme from general MIT Scheme, the arithmetic operators do get redefined
+slightly---so that rational arithmetic does not yield unexpectedly huge
+quotients.}.
+
+Scheme also provides a means to construct procedure values, namely, with
+lambda expressions.  The
+\begin{itemize}
+\item primitive values,
+\item primitive procedure variables, and
+\item lambda expressions,
+\end{itemize} are called {\em immediate values}.
+
+The full meaning of lambda expression like \Code{(lambda (x) (+ x y))}
+isn't determined until we know what number \Code{y} is defined to be, so
+we also allow syntactic values like
+\begin{lisp}
+(define y 2)
+(lambda (x) (+ x y))
+\end{lisp}
+which represents the ``add 2'' function.  In general, a {\em syntactic
+value} is a sequence of zero or more {\em immediate definitions} followed
+by an immediate value, where an immediate definition is of the form
+\Code{(define \vrbl\ \ival)}.
+
+
+\section{Term Rewriting}
+
+We begin by describing rewrite rules for combinations and \Code{if}
+expressions.  To manage definitions, we'll also have rewrite rules for
+Scheme bodies, where a {\em body} is sequence of zero or more definitions
+followed by an expression.  We'll use the notation
+\[\bod_{1} \rulesto \bod_{2}\]
+to indicate the rule that $\bod_{1}$ can be rewritten as, that is, replaced
+by, $\bod_2$.
+
+When an expression not only returns a value but also causes {\em
+side-effects} like printing, then it is essential to be able to control
+how rules are applied, and this is a crucial aspect of Scheme programming.
+But as long as we focus on {\em values}, as we have to this point in
+6.001, we needn't specify any special strategy for applying rules: a
+sub-body matching the lefthand side of a rule can be rewritten as the
+righthand side, anywhere, anytime.\footnote{For example, Scheme
+unambiguously specifies that evaluation of the combination:
+\[\Code{((lambda (x) ((lambda (y) 99) (display \#t))) (display \#f))}\]
+will cause the operand to be evaluated before the {\em body} of the
+operator, so \Code{\#f\#t} will be printed before the value \Code{99} is
+returned.  On the other hand, if the inner \Code{display} combination
+within the body was evaluated first, then \Code{\#t\#f} would be printed
+before the value \Code{99} was returned.  But it's the same syntactic
+value, \Code{99}, returned in either case!} A Substitution Model in which
+rules can be used anywhere is called a {\em term rewriting model} (TRM).
+That's what we will describe for Scheme.
+
+\subsection{Primitive Application Rules}
+We take for granted an (infinite) set of {\em primitive application rules\/}
+for rewriting primitive operators on primitive values, for example,
+\begin{eqnarray*}
+\Code{(- 2 3)}  & \rulesto & \Code{-1}\\
+\Code{(* 4 5 42)}  & \rulesto & \Code{840}\\
+\vdots
+\end{eqnarray*}
+In general, a primitive application rule is of the form
+\[\bnf\Code{($<primitive procedure variable>$ \pval_{1} \ldots)} \rulesto \pval.\]
+
+By repeatedly {\em applying\/} such rules, namely replacing lefthand sides
+of rules with their righthand sides, we can rewrite any nested primitive
+combination to its primitive value.  For example,
+\begin{eqnarray*}
+\Code{(+ 0 1 (- 2 3) (* 4 5 (* -6 -7)))}  & \rulesto & \Code{(+ 0 1 (- 2 3) (* 4 5 42))}\\
+{}&  \rulesto & \Code{(+ 0 1 -1 (* 4 5 42))}\\
+{}&  \rulesto & \Code{(+ 0 1 -1 840)}\\
+{}&  \rulesto & \Code{840}
+\end{eqnarray*}
+
+Another familiar set of primitive application rules result in the {\em
+truth values\/} \Code{#t}, \Code{#f}:
+\begin{eqnarray*}
+\Code{(< 6 7)}  & \rulesto & \Code{#t}\\
+\Code{(not #f)}  & \rulesto & \Code{#t}\\
+\Code{(zero? -1.414)}  & \rulesto & \Code{#f}\\
+\vdots
+\end{eqnarray*}
+For example, applying these rules and the numerical ones above allows us
+to handle:
+\begin{eqnarray*}
+\Code{(not (< (+ 0 1 2) (/ 3 1)))}  & \rulesto & \Code{(not (< (+ 0 1 2) 3))}\\
+{}&  \rulesto & \Code{(not (< 3 3))}\\
+{}&  \rulesto & \Code{(not #f)}\\
+{}&  \rulesto & \Code{#t}
+\end{eqnarray*}
+
+It is easy to see that {\em it does not matter in what order the primitive
+rewriting rules are applied}---the primitive value at the end will always
+be the same!\footnote{Well, there's a {\em proviso\/} here: the primitive
+value is unique when it is {\em possible} somehow to rewrite the
+expression into one.  Some ``ill-typed'' expressions like \Code{(/ \#t 3)}
+do not have values.  (What would Scheme do when such an expression is
+evaluated?)} For example, we might have chosen to rewrite the example
+above in another order:
+\begin{eqnarray*}
+\Code{(not (< (+ 0 1 2) (/ 3 1)))}  & \rulesto & \Code{(not (< 3 (/ 3 1)))}\\
+{}&  \rulesto & \Code{(not (< 3 3))}\\
+{}&  \rulesto & \Code{(not #f)}\\
+{}&  \rulesto & \Code{#t}
+\end{eqnarray*}
+The primitive value is unique because Scheme is {\em fully
+parenthesized}---ambiguous mathematical expressions like $(3 + 2 - 4)$ are
+disallowed---and because there are no primitive rules with the same
+lefthand side but different righthand sides.
+
+\subsection{Conditional Rules}
+There are two rewrite rules for an \Code{if} expression:
+\begin{bnf}
+\begin{eqnarray*}
+\Code{(if #f \expr_{1} \expr_{2} )} & \rulesto & \expr_{2}\\
+\Code{(if $<non-"#f" immediate value>$ \expr_{1} \expr_{2})} & \rulesto & \expr_{1}
+\end{eqnarray*}
+\end{bnf}
+
+Note that, in contrast to primitive applications, the \Code{if} rule can
+be applied without the constraint that $\expr_{1}$ and $\expr_{2}$ be
+immediate values.
+
+Now we can do rewriting such as
+\begin{align*}
+\Code{(if (lambda (a b) c) }
+    &\Code{(if (not (< (+ 0 1 2) (/ 3 1))) atan (lambda (x) x)) +)}\\
+{}\rulesto{} & \Code{(if (not (< (+ 0 1 2) (/ 3 1))) atan (lambda (x) x))}\\
+\vdots\\
+\rulesto{} & \Code{(if \#t atan (lambda (x) x))}\\
+\rulesto{} & \Code{atan}
+\end{align*}
+
+\subsection{Instantiation}
+The {\em variable instantiation rule\/} is:
+\begin{quote}
+\[\vrbl \rulesto \ival\]
+when \vrbl\ is defined to be \ival.
+\end{quote}
+
+For example,
+\begin{eqnarray*}
+\lefteqn{\Code{(define y 7) (define x (+ 1 2)) (* x y)}}\\
+{} & \rulesto & \Code{(define y 7) (define x (+ 1 2)) (* x 7)}\\
+{} & \rulesto & \Code{(define y 7) (define x 3) (* x 7)}\\
+{} & \rulesto & \Code{(define y 7) (define x 3) (* 3 7)}\\
+{} & \rulesto & \Code{(define y 7) (define x 3) 21}
+\end{eqnarray*}
+
+Actually, to be used as a term rewriting rule at an arbitrary place in a
+body, the instantiation rule must also include a technical specification
+about changing defined names into ``fresh'' names\footnote{The problem is
+that after instantiation, there are two copies of \ival---the original one
+in the definition of \vrbl, and another at the place where \vrbl\ was
+instantiated.  It may happen that some variable {\em within} \ival\ winds
+up underneath a different definition in the second copy than it did in the
+original.  This has to be prevented in order to mantain the requirement
+that Scheme be statically scoped.}.  Fortunately, this technicality can
+safely be ignored as long as we obey
+\begin{quote}
+{\bf The Lambda Body Rewriting Restriction}: {\em Don't instantiate into
+the body of a lambda expression.}
+\end{quote}
+Real Scheme evaluation obeys the lambda body restriction.
+
+\subsection{Lambda Applications and Renaming}
+
+Scheme grammar allows definitions only in a sequence at the beginning of a
+body.  Bodies can only appear by themselves at ``top-level,'' or as the
+bodies of lambda expressions\footnote{A formal grammar for TRM Scheme is
+attached as an Appendix for your reference.}.
+
+When the lambda application rule creates new immediate
+definitions\footnote{To obtain ``call-by-name,'' or ``normal order,''
+behavior, we must relax the condition that the operands of the combination
+be \ival's, allowing them instead to be arbitrary expressions.}, we just
+stick them anyplace that is grammatical.  Definitions at the beginning of
+a lambda body may also have to be moved after the lambda disappears.
+So the form of the lambda application rule is:
+\[\Code{((lambda (\vrbl_{1}\ldots) \defines\ \expr) \ival_{1}\ldots)} \rulesto
+\expr\]
+\begin{quote}
+with the sequence
+\[\Code{(define \vrbl_1 \ival_{1})}\ldots\defines\]
+placed in the body above \expr\ at any position at which a sub-body may
+begin.
+\end{quote}
+But watch out!  This time there is a naming problem we cannot avoid.
+
+The scope, or binding, rules of a language determine how names are
+associated with things named.  Scheme is a {\em statically} scoped
+language (also called {\em lexically} scoped).  The purpose of static
+scoping is to nsure that names of formals or names defined within an
+expression can be ``kept private'' so they behave independently of names
+outside the expression.  In this way, a programmer can choose names within
+a program without concern for whether or how the same names may have been
+used elsewhere.
+
+For example, in Scheme, evaluation of the following body returns
+the value 8, as we would expect:
+\begin{lisp}
+(define make-incrementer (lambda (n) (lambda (m) (+ m n))))
+(define add2 (make-incrementer 2))
+(define add3 (lambda (n) (inc (add2 n))))
+(add3 5)
+\end{lisp}
+
+As the names suggest, \Code{add2} has the behavior of adding two to its
+operand; similarly, \Code{add3} adds three.  Let's examine in detail how
+our Substitution Model realizes this intended behavior.
+
+The only rule applicable at the start is instantiatiation for
+\Code{make-incrementer} or \Code{add3}.  Scheme would work on the
+definitions at the beginning first, so let's do likewise and first
+instantiate \Code{make-incrementer}:
+\begin{lisp}
+(define make-incrementer (lambda (n) (lambda (m) (+ m n))))
+(define add2 ((lambda (n) (lambda (m) (+ m n))) 2))
+(define add3 (lambda (n) (inc (add2 n))))
+(add3 5)
+\end{lisp}
+It will be easier to follow this example if we now simplify the body by
+dropping the no longer referenced definition---in this case, the
+definition of \Code{make-incrementer}:
+\begin{lisp}
+(define add2 ((lambda (n) (lambda (m) (+ m n))) 2))
+(define add3 (lambda (n) (inc (add2 n))))
+(add3 5)
+\end{lisp}
+Lambda application in the definition of \Code{add2} creates a definition
+of \Code{n}:
+\begin{lisp}
+(define add2 (lambda (m) (+ m n)))
+(define n 2)
+(define add3 (lambda (n) (inc (add2 n))))
+(add3 5)
+\end{lisp}
+Now we can instantiate \Code{add3} and then drop its definition:
+\begin{lisp}
+(define add2 (lambda (m) (+ m n)))
+(define n 2)
+((lambda (n) (inc (add2 n))) 5)
+\end{lisp}
+Lambda application comes next, yielding:
+\begin{lisp}
+(define add2 (lambda (m) (+ m n)))
+(define n 2)
+(define n 5)
+(inc (add2 n))
+\end{lisp}
+
+Now there is an obvious problem, because we have two definitions of
+\Code{n} at the beginning of the block, which is ambiguous and indeed
+violates Scheme grammar.  We handle this by renaming the newly defined
+\Code{n} and the occurrences it defines, to some ``fresh'' name, say
+\Code{n#1}:
+\begin{lisp}
+(define add2 (lambda (m) (+ m n)))
+(define n 2)
+(define n#1 5)
+(inc (add2 n#1))
+\end{lisp}
+This expression is grammatical again, and now it is safe to instantiate
+and garbage-collect \Code{add2}:
+\begin{lisp}
+(define n 2)
+(define n#1 5)
+(inc ((lambda (m) (+ m n)) n#1))
+\end{lisp}
+
+Notice that if we had not renamed \Code{n} to \Code{n#1} in this way, we
+would have rewritten to
+\begin{lisp}
+(define n 2)
+(define n 5)
+(inc ((lambda (m) (+ m n)) n))
+\end{lisp}
+and the ambiguity of which occurrence of \Code{n} is bound to which value
+becomes unresolvable\footnote{Actually, until the mid-1970's, all LISP
+dialects resolved the ambiguity by choosing the ``nearest'' value of
+\Code{n}, so that this example would have rewritten to \Code{(inc ((lambda
+(m) (+ m 5)) 5))} and resulted in the value 11 instead of 8.  This method
+of name management is called ``dynamic scope.''}.
+
+So a more accurate statement of the {\em lambda application rule} is:
+\[\Code{((lambda (\vrbl_{1} \ldots) \defines \expr) \ival_{1} \ldots)} \rulesto
+\expr\]
+\begin{quote}
+with the sequence
+\[\Code{(define \vrbl_1 \ival_{1})}  \ldots \defines\]
+placed above \expr\ in any position in the body at which a sub-body may
+begin, {\bf with defined variables freshly renamed as necessary}.
+\end{quote}
+
+\subsection{Garbage Collection}
+
+``Garbage collection'' refers to the process whereby LISP-like systems
+identify and recapture previously used, but no longer accessible, storage
+cells.  The corresponding process in our TRM is dropping
+unreferenced definitions, so we call this the {\em garbage collection
+rule}:
+\begin{eqnarray*}
+\bod_1 & \rulesto& \bod_2,\\
+\mbox{where $\bod_2$ is the } & \mbox{result} & \mbox{ of erasing garbage in $\bod_1$}.
+\end{eqnarray*}
+A subset $G$ of immediate definitions among the definitions occurring at
+the beginning of a body is said to be {\em garbage in the body}, if none
+of the variables left in the body after $G$ is erased were defined by $G$.
+
+For example, in
+\begin{lisp}
+(define a (lambda () b))
+(define b 3)
+(define c (lambda () (* b d)))
+(define d 4)
+(+ 1 (a))
+\end{lisp}
+The definitions of \Code{c} and \Code{d} are {\em garbage} because
+\Code{c}'s and \Code{d}'s don't occur anywhere outside their own
+definitions.  The body can be garbage collected to be:
+\begin{lisp}
+(define a (lambda () b))
+(define b 3)
+(+ 1 (a))
+\end{lisp}
+
+
+\section{Uniqueness}
+
+The full set of term rewriting rules has same the unique value
+property as the simple algebraic rules:
+\begin{quote}
+\noindent{\bf The Unique Value Theorem}.  {\em There is at most one
+primitive value that can be reached by successively rewriting a body using
+the Scheme Term Rewriting rules above.}
+\end{quote}
+
+That's the good news.  The bad news is that the order in which rules
+are applied {\em does} matter to avoid wasted time and space---even
+infinite waste if rules are applied forever in useless places such as
+the alternative branch of an \Code{if} whose test evaluates to
+\Code{#t}.
+
+We also observed that real Scheme evaluation obeys the lambda body
+restriction.  There is no problem about this because of the
+\begin{quote}
+\noindent{\bf Lambda Body Safety Theorem}.  {\em If a body can be
+rewritten into a primitive value by successive use of the Scheme Term
+Rewriting rules above, then it can be rewritten to a primitive value while
+obeying the lambda body rewriting restriction.}
+\end{quote}
+
+Of course by the Uniqueness Theorem, rewriting while obeying the lambda
+body restriction will reach the {\em same} primitive value, if any, as any
+other way of applying the rules.
+
+The Uniqueness and Safety Theorems are by no means obvious.  (Their proof
+is sometimes covered in the graduate course 6.840 on Semantics of
+Programming Languages.)  There is a whole subdiscipline of Theoretical
+Computer Science called Term Rewriting Theory which studies such
+properties.
+
+\section{Derived Expressions}
+
+We have described above a ``kernel'' of Scheme which omits many familiar,
+convenient Scheme constructs.  For example, we want to handle \Code{cond}
+and \Code{let}.
+
+Instead of extending the rewrite rules to handle these special forms
+directly, another approach is to think of these extensions as
+abbreviations, or ``syntactic sugar,'' for kernel expressions.  For
+example,
+\[
+\Code{(let (($\vrbl_1$ $\init_1$)$\ldots\,$) \bod)}
+\]
+can be understood as an abbreviation for
+\[
+\Code{((lambda ($\vrbl_1\cdots\,$) \bod) $\init_1 \ldots\,$).}
+\]
+and
+\begin{eqnarray*}
+\Code{(cond } & \Code{($\test_{1}$ $\expr_{1}$)} \\*
+              & \Code{($\test_{2}$ $\expr_{2}$)} \\*
+              & \vdots \\*
+              & \Code{(else $\expr_{n}$))}
+\end{eqnarray*}
+can be understood as an abbreviation for
+\[
+    \setlength{\arraycolsep}{0pt}
+    \begin{array}{lllllllllllll}
+    \Code{(if } & \rlap{\test_{1}} \\
+                & \rlap{\expr_{1}} \\
+                & \Code{(if } & \test_{2} \\
+                &             & \rlap{\expr_{2}} \\
+                &             & \vdots \\
+                &             & \qquad \Code{(if } & \test_{n-1} \\
+                &             &                    & \expr_{n-1} \\
+                &             &                    & \expr_{n}\Code{)\ldots))}.
+    \end{array}
+\]
+So we can specify the computations of derived expressions by
+translating, or ``desugaring,'' them into kernel \expr's\footnote{These
+translations are generally linear-time, one-pass, and yield a
+kernel-\expr\ of size proportional to the original extended-\expr.  Real
+Scheme interpreters and compilers typically carry out such translations.}.
+The \RFS\ Report describes the translations above and others for \andsf's,
+\orsf's, and several further forms.
+
+\section{Lists and Symbols}
+
+Scheme output notation for lists and symbols makes them look just like
+expressions.  Using this notation in the TRM presents a problem: how do we
+tell the difference between lists and combinations\footnote{The fact that
+lists print out looking like expressions is generally considered a very
+valuable feature in Lisp.  On the other hand, at least one famous
+contemporary Computer Scientist has protested publicly that because of
+this he couldn't learn Lisp---he could never figure out when to stop
+evaluating expressions.}?  For example, is ``\Code{(+ 3 4)}'' a
+combination---which should be rewritten to the syntactic value
+\Code{7}---or is it a list of three elements---the procedure variable
+\Code{+} (or perhaps it is the symbol ``\Code{+}'') followed by \Code{3}
+and \Code{4}?  So the TRM instead ``simplifies'' lists into syntactic
+values which are nested \Code{cons}'s of list elements.  For example, the
+expression \Code{(list + 3 4)}, which Scheme prints out as
+``\Code{([compiled arithmetic procedure +] 3 4)},'' would be rewritten in
+our TRM into the expression
+\[\Code{(cons + (cons 3 (cons 4 ())))}.\]
+Similarly, {\em symbols\/} which print out as \Code{a} or \Code{+}
+would be described in the TRM by the expressions \Code{(quote a)} or
+\Code{(quote +)} to avoid confusing them with variables.  So
+\Code{(list '+ 3 4)}, which Scheme prints out as ``\Code{(+ 3 4)},''
+would would be rewritten in our TRM into the expression
+\[\Code{(cons (quote +) (cons 3 (cons 4 ())))}.\]
+
+With these notational conventions, it is a straightforward to handle
+list structures in the TRM\footnote{This way of handling list works
+  usefully until we begin ``mutating'' lists, at which point some more
+  refined description of list structure would be needed.}.  Namely, we
+add the appropriate procedure variables such as \Code{cons},
+\Code{car} and \Code{cdr}, and regard any expression of the form
+\[\bnf\Code{(cons \ival\ \ival)}\]
+as an immediate value.  We don't even have to add a rewrite rule for
+applications of \Code{cons}!  We do add some obvious rules for \Code{car}
+and \Code{cdr}:
+\begin{eqnarray*}
+\Code{(car (cons \ival_{1} \ival_{2}))}
+& \rulesto & \ival_{1} \\
+\Code{(cdr (cons \ival_{1} \ival_{2}))}
+& \rulesto & \ival_{2} \\
+\end{eqnarray*}
+The rules for \Code{cons}, \Code{car} and \Code{cdr} resemble the
+primitive procedure rules in that they require that all the operands be
+\ival's before the rule can be implied.  These {\em rule-specified
+procedure variables} are, like primitive procedure variables, also treated
+as \ival's.
+
+Here are the remaining important rewriting rules about lists:
+\begin{gather*}
+\Code{(apply $E_{0}$ (cons $E_{1} \ldots$ (cons $E_{n}$ ())\ldots ))}
+\rulesto \Code{($E_{0}\ E_{1}\ldots E_{n}$)}
+\\[\bigskipamount]
+\begin{aligned}
+\Code{(pair? (cons \ival_{1} \ival_{2})} &\rulesto \Code{\#t}\\
+\Code{(pair? \ival_{3})} &\rulesto \Code{\#f}\\
+\end{aligned}\\
+\text{if $\ival_{3}$ is not of
+the form \Code{(cons \ival_{1} \ival_{2})}}
+\\[\bigskipamount]
+\begin{align*}
+\Code{(null? ())}   & \rulesto \Code{\#t}\\
+\Code{(null? \ival)} & \rulesto \Code{\#f}\\
+\mbox{if \ival}  & \mbox{ is } \mbox{not \Code{()}.}
+\end{align*}\\[\bigskipamount]
+\begin{align*}
+\Code{(list)} & \rulesto  \Code{()}\\
+\Code{(list \ival_{1} \ldots)}  & \rulesto  \Code{(cons \ival_{1}
+(list \ldots))}
+\end{align*}
+\end{gather*}
+
+
+\section{Running the Substitution Model}
+
+There is an implementation of the Substitution Model which you are welcome
+to use.  It may help you understand how Scheme processes behave, and it
+can also serve as a simple debugging aid.  Of course it is about four
+orders of magnitude slower than Scheme, so don't expect it to be useful on
+compute-intensive examples.
+
+In the 6.001 Edwin editor, use {\tt M-x load-problem-set: 4} to load the
+code for the Substitution Model.  You can generate a list of the steps in
+the rewriting of an expression (in reverse order) by applying the
+procedure \Code{smstep-list} to the quoted expression.  The order in which
+rewrite rules are applied reflects Scheme evaluation order fairly
+accurately.  To generate the list and print it nicely, apply the procedure
+\Code{smeval} to the quoted expression.
+
+For example, evaluate
+\begin{lisp}
+(smeval '((lambda (n) (+ 2 n)) 3))
+\end{lisp}
+to see expressions at selected steps as this lambda application
+successively rewrote to \Code{5}.
+
+A body beginning with one or more definitions is represented as a list of
+the definitions with an expression at the end.  So evaluating,
+\begin{lisp}
+(smeval
+ '((define (rec-factorial n)
+     (if (<= n 0)
+         1
+         (* n (rec-factorial (dec n)))))
+   (rec-factorial 6)))
+\end{lisp}
+will allow you to watch how this body rewrote to \Code{720}.
+
+An expression printed out by \Code{smeval} at any point is a well-formed
+Scheme expression which can be evaluated in Scheme and will give the same
+final result as \Code{smeval}---at least if the final result is a number
+or truth value\footnote{To evaluate a {\em body} printed by \Code{smeval}
+when the body begins with definitions, it has to be made into a Scheme
+expression.  If the body printed out is
+\[\bnf \Code{(}\define_{1} \ldots \expr \Code{)}, \]
+then in Scheme evaluate
+\[\bnf \Code{((lambda () } \define_{1} \ldots \expr\Code{))}.\]}.
+
+
+\subsection{Controlling Printout}
+
+There are several utilities to control the output printed by \Code{smeval}.
+
+The value returned by a call to \Code{smeval} is the \val\ at
+which it successfully stops, or else an error message.  To be able to see
+the final value in more familiar format, you should evaluate
+\begin{lisp}
+(define reversed-steps (smstep-list body))
+
+(define final-body (body-or-info-of-step (car reversed-steps)))
+
+(pp (printable-version final-body))
+\end{lisp}
+
+The procedure \Code{save-this-step?} determines which steps get saved on
+the list generated by \Code{smstep-list} for printing by \Code{smeval}.
+The default is to print more sparsely as the step-number grows.  To save
+every step, evaluate
+\begin{lisp}
+(define (save-this-step? step-number body) #t)
+\end{lisp}
+
+The procedure \Code{garbage-collect-this-step?} can be used to force more
+frequent garbage collections.  Its default arbitrarily imposes a garbage
+collection every fortieth step.  To avoid such extra garbage collection
+(which can slow things down a bit), evaluate
+\begin{lisp}
+(define (garbage-collect-this-step? step-number body) #f)
+\end{lisp}
+
+The procedure \Code{interrupt-smeval?} limits the number of rewriting
+steps in an evaluation.  Its default is to abort evaluation after 600
+steps.  You may want to do shorter runs.  For example, to set
+\Code{smeval} to stop after 100 rewriting steps, evaluate
+\begin{lisp}
+(define (interrupt-smeval? step-number body) (> step-number 100))
+\end{lisp}
+
+{\bf Warnings}:
+The code for the TRM implementation is written to be readable by
+(ambitious) beginning 6.001 students, with major sacrifices in speed and
+resilience for the sake of clarity.  As a consequence, \Code{smeval}
+typically runs forever or crashes gracelessly on ungrammatical inputs.  It
+is a good idea to test expressions by evaluating them in Scheme before
+\Code{smeval}'ing them.
+
+Edwin itself wedges horribly if the \Code{*scheme*} buffer overflows
+(which may happen when its size is within a small factor of 100K
+characters).  You don't want this to happen!  So be careful about doing
+\Code{smeval} for long computations; instead save the list
+\Code{smstep-list} generates and view it selectively.
+
+\subsection{Bugs}
+
+We don't know of any yet, but there surely are some.  Gratitude and lots
+of 6.001 brownie points for first bug reports---email them to
+\Code{6001-lecturers@ai.mit.edu}.
+
+\section{Appendix: Grammar for Functional Scheme}
+
+\subsection{Kernel Syntax}
+
+\begin{bnf}
+\begin{eqnarray*}
+<define> &:=& "(define"\: <variable> <expression> ")"\\
+<body>  &::=& <define_{1}>\ldots <expression>\\
+        && {} \qquad \hbox{(Note: all defined variables must be distinct)}\\
+\\
+<expression> &::=& <variable> | <self-evaluating> | <symbol> | "()"\\
+        && {}   | <combination> | <lambda expression> | <if>\\
+\\
+<self-evaluating>       &::=& <numeral> | <boolean>\\
+<numeral>   &::=&   "0" | "-1" | "3.14159" | \ldots\\
+<boolean>   &::=&   "#t" | "#f" \\
+\\
+<symbol>        &::=& "(quote " <variable> ")" | \Code{(quote $<keyword>$)}\\
+\\
+<combination>   &::=&   "(" <operator> <operand_{1}> \ldots ")"\\
+<operator>   &::=&   <expression>\\
+<operand>   &::=&   <expression>\\
+\\
+<lambda expression> &::=&  "(lambda ("<formals>") " <body> ")" \\
+<formals>   &::=&   <variable_{1}>\ldots\\
+        && {} \qquad \hbox{(Note: all \vrbl's must be distinct)}\\
+\\
+<if> &:=& "(if"\: <test> <consequent> <alternative> ")" \\
+<test>   &::=&   <expression>\\
+<consequent>   &::=&   <expression>\\
+<alternative>   &::=&   <expression>\\
+\\
+<primitive procedure variable> &::=& "+" | "-" | "*" | "/" | "=" | "<" | "atan" | \dots\\
+<rule-specified procedure variable> &::=& "null?" | "pair?" | "car" |
+"cdr" | "cons" | "list" | "equal?" | "apply"\\
+<keyword>   &::=& "define" | "quote" | "lambda" | "if"\\
+<variable> &::=& \hbox{identifiers which are not $\bnf
+        <self-evaluating>$ or $\bnf <keyword>$'s}\\
+\end{eqnarray*}
+\end{bnf}
+
+
+\subsection{Derived Syntax}
+
+\begin{bnf}
+\begin{eqnarray*}
+\expr &::=& \ldots | <derived expression>\\
+<derived expression> &::=& <cond> | <let> | \ldots\\
+<cond> &::=& "(cond"\: <clause_{1}> \ldots ")"\\
+<clause> &::=& "(" <test> <expression>")" | "(else " \expr ")"\\
+<let> &::=& "(let ("<binding_{1}> \ldots") " <body> ")" \\
+<binding> &::=& "(" <variable> <init> ")"\\
+<init> &::=& <expression>\\
+%<begin> &::=& "(begin"\: \expr_{1} \ldots ")"\\
+<define> &::=& \ \ldots\, | "(define ("<variable> <formals>")" <body>")"\\
+%<primitive procedure variable> &::=& \ \ldots\, | "display" | "newline"\\
+<keyword>  &::=&  \ \ldots\, | "cond" | "let" | "else" | \ldots\\
+%"begin" | \ldots
+\end{eqnarray*}
+\end{bnf}
+
+
+\subsection{Values}
+
+\begin{bnf}
+\begin{eqnarray*}
+\pval &::=&  <self-evaluating> | <symbol> | "()"\\
+\ival &::=& \pval | <lambda expression>\\
+        && {} | <primitive procedure variable>\\
+        && {} | <rule-specified procedure variable>\\
+        && {} | "(cons "<immediate value>\ <immediate value>")"\\
+<immediate define> &::=& "(define"\: <variable> <immediate value>")" \ldots\\
+<value> &::=& <immediate define_{1}> \ldots <immediate value>\\
+        && {} \qquad \hbox{(Note: all defined \vrbl's must be distinct)}\\
+\end{eqnarray*}
+\end{bnf}
+
+\end{document}

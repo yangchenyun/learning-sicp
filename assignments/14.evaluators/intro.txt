@@ -1,0 +1,7 @@
+Evaluators
+Relevant sections in text: 4.1, 4.2
+
+This assignment covers the evaluators presented at the beginning of
+chapter 4: the metacircular evaluator of section 4.1, the analyze
+evaluator of section 4.1.7, and the normal-order evaluator of section 4.2.
+

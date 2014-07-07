@@ -29,23 +29,24 @@
                     opponent-up-card))
         (else my-hand)))                ; stay
 
-(define (deal) (+ 1 (random 10)))
+;; override in tutorial 1
+;; (define (deal) (+ 1 (random 10)))
 
-(define (make-new-hand first-card)
-  (make-hand first-card first-card))
+;; (define (make-new-hand first-card)
+;;   (make-hand first-card first-card))
 
-(define (make-hand up-card total)
-  (cons up-card total))
+;; (define (make-hand up-card total)
+;;   (cons up-card total))
 
-(define (hand-up-card hand)
-  (car hand))
+;; (define (hand-up-card hand)
+;;   (car hand))
 
-(define (hand-total hand)
-  (cdr hand))
+;; (define (hand-total hand)
+;;   (cdr hand))
 
-(define (hand-add-card hand new-card)
-  (make-hand (hand-up-card hand)
-             (+ new-card (hand-total hand))))
+;; (define (hand-add-card hand new-card)
+;;   (make-hand (hand-up-card hand)
+;;              (+ new-card (hand-total hand))))
 
 (define (hit? your-hand opponent-up-card)
   (display "Opponent up card ")
@@ -103,13 +104,13 @@
   (cond
    ((< (hand-total player-hand) 12) #t)
    ((> (hand-total player-hand) 16) #f)
-   ((= (hand-total player-hand) 12) (< opponent-up-card 4))
-   ((= (hand-total player-hand) 16) (= opponent-up-card 10))
-   (else (> opponent-up-card 6))))
+   ((= (hand-total player-hand) 12) (< (car opponent-up-card) 4))
+   ((= (hand-total player-hand) 16) (= (car opponent-up-card) 10))
+   (else (> (car opponent-up-card) 6))))
 
-(displayln (test-strategy (stop-at 15) louis 10))
-(displayln (test-strategy (stop-at 16) louis 10))
-(displayln (test-strategy (stop-at 17) louis 10))
+;; (displayln (test-strategy (stop-at 15) louis 10))
+;; (displayln (test-strategy (stop-at 16) louis 10))
+;; (displayln (test-strategy (stop-at 17) louis 10))
 
 ;; Problem 6
 (define (both strategy1 strategy2)
@@ -117,4 +118,39 @@
     (and (strategy1 play-hand opponent-up-card)
          (strategy2 play-hand opponent-up-card))))
 
-(displayln (test-strategy (both hit? (stop-at 17)) louis 1))
+;; (displayln (test-strategy (both hit? (stop-at 17)) louis 1))
+
+;; Tutorial 1 Redefine the card/hand data structure
+(define (make-new-hand first-card)
+  (make-hand first-card (cons first-card '())))
+
+(define (make-hand up-card card-set)
+  (cons up-card card-set))
+
+(define (hand-add-card hand new-card)
+  (make-hand (hand-up-card hand)
+             (cons new-card (hand-card-set hand))))
+
+(define (hand-total hand)
+  (card-set-total (hand-card-set hand)))
+
+(define (card-set-total card-set)
+  (if (empty? card-set)
+      0
+      (+ (card-value (car card-set)) (card-set-total (cdr card-set)))))
+
+;; card: (value suite)
+(define (card-value card) (car card))
+(define (card-suite card) (car (cdr card)))
+
+;; hand: (up-card card card ...)
+(define (hand-up-card hand) (car hand))
+(define (hand-card-set hand) (cdr hand))
+
+;; now a card should contain both value and suite
+(define (deal) (cons (+ 1 (random 10)) (+ 1 (random 4))))
+
+;; should working properly
+;; (displayln (test-strategy (stop-at 15) louis 10))
+;; (displayln (test-strategy (stop-at 16) louis 10))
+;; (displayln (test-strategy (stop-at 17) louis 10))

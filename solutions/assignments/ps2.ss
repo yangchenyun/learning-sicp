@@ -1,26 +1,16 @@
 #lang r5rs
-(#%require racket/base)
-;;; Scheme code for Twenty-One Simulator [PS2 Fall '90]
+(#%require rnrs/sorting-6)
+(#%require rnrs/lists-6)
+(#%require r6rs/private/ports)
+(#%require (only racket/base random))
 
-(define (twenty-one player-strategy house-strategy)
-  (let ((house-initial-hand (make-new-hand (deal))))
-    (let ((player-hand
-           (play-hand player-strategy
-                      (make-new-hand (deal))
-                      (hand-up-card house-initial-hand))))
-      (if (> (hand-total player-hand) 21)
-          0                                ; ``bust'': player loses
-          (let ((house-hand
-                 (play-hand house-strategy
-                            house-initial-hand
-                            (hand-up-card player-hand))))
-            ;; (display-hands player-hand house-hand)
-            (cond ((> (hand-total house-hand) 21)
-                   1)                      ; ``bust'': house loses
-                  ((> (hand-total player-hand)
-                      (hand-total house-hand))
-                   1)                      ; house loses
-                  (else 0)))))))           ; player loses
+;;; Scheme code for Twenty-One Simulator [PS2 Fall '90]
+(define (displayln list)
+  (display list)
+  (newline))
+
+(define read-line
+  (lambda () (get-line (current-input-port))))
 
 (define (play-hand strategy my-hand opponent-up-card)
   (cond ((> (hand-total my-hand) 21) my-hand) ; I lose... give up
@@ -73,23 +63,55 @@
 
 ;; Problem 2
 (define (stop-at cap)
-  (λ (your-hand opponent-up-card)
+  (lambda (your-hand opponent-up-card)
     (< (hand-total your-hand) cap)))
 
 ;; (display-game-result (twenty-one hit? (stop-at 16)))
 
 ;; Problem 3
 (define (test-strategy player-strategy house-strategy number-of-games)
-  (if (= number-of-games 0)
-      0
-      (+ (twenty-one player-strategy house-strategy)
-         (test-strategy player-strategy house-strategy (- number-of-games 1)))))
+  (letrec ((deck (shuffle-deck (create-deck)))
+           ;; the local deal method
+           (deal (lambda ()
+                   (if (null? deck) (set! deck (shuffle-deck (create-deck))))
+                   (let ((card (car deck)))
+                     (set! deck (cdr deck))
+                     (cons card (+ 1 (random 4))))))
+
+           (twenty-one (lambda (player-strategy house-strategy)
+                         (let ((house-initial-hand (make-new-hand (deal))))
+                           (let ((player-hand
+                                  (play-hand player-strategy
+                                             (make-new-hand (deal))
+                                             (hand-up-card house-initial-hand))))
+                             (if (> (hand-total player-hand) 21)
+                                 0                                ; ``bust'': player loses
+                                 (let ((house-hand
+                                        (play-hand house-strategy
+                                                   house-initial-hand
+                                                   (hand-up-card player-hand))))
+                                   ;; (display-hands player-hand house-hand)
+                                   (cond ((> (hand-total house-hand) 21)
+                                          1)                      ; ``bust'': house loses
+                                         ((> (hand-total player-hand)
+                                             (hand-total house-hand))
+                                          1)                      ; house loses
+                                         (else 0))))))))           ; player loses
+
+           (play-game-once (lambda (player-strategy house-strategy number-of-games)
+                             (if (null? deck)
+                                 1
+                                 (if (= number-of-games 0)
+                                     0
+                                     (+ (twenty-one player-strategy house-strategy)
+                                        (play-game-once player-strategy house-strategy (- number-of-games 1))))))))
+    (play-game-once player-strategy house-strategy number-of-games)))
 
 ;; (display (test-strategy (stop-at 16) (stop-at 15) 100))
 
 ;; Problem 4
 (define (watch-player strategy)
-  (λ (player-hand house-up-card)
+  (lambda (player-hand house-up-card)
     (let ((decision (strategy player-hand house-up-card)))
       (display "Opponent up card ")
       (displayln house-up-card)
@@ -115,7 +137,7 @@
 
 ;; Problem 6
 (define (both strategy1 strategy2)
-  (λ (play-hand opponent-up-card)
+  (lambda (play-hand opponent-up-card)
     (and (strategy1 play-hand opponent-up-card)
          (strategy2 play-hand opponent-up-card))))
 
@@ -155,3 +177,23 @@
 ;; (displayln (test-strategy (stop-at 15) louis 10))
 ;; (displayln (test-strategy (stop-at 16) louis 10))
 ;; (displayln (test-strategy (stop-at 17) louis 10))
+
+;; Tutorial 2
+(define (card-from-index i)
+  (let ((card (+ 1 (floor (/ i 4)))))
+    (if (<= card 10) card 10)))
+
+(define (create-deck)
+  (do ((deck '() (cons (card-from-index i) deck))
+       (i 54 (- i 1)))
+      ((< i 0) deck)))
+
+(define randomp
+  (lambda (a b) (< (random 100) 50)))
+
+(define (shuffle-deck deck)
+  (list-sort randomp deck))
+
+;; (display (shuffle-deck (create-deck)))
+
+(displayln (test-strategy (stop-at 17) louis 229))

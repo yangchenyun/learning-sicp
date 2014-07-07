@@ -1,4 +1,5 @@
-(require r5rs/init)
+#lang r5rs
+(#%require racket/base)
 ;;; Scheme code for Twenty-One Simulator [PS2 Fall '90]
 
 (define (twenty-one player-strategy house-strategy)
@@ -135,7 +136,7 @@
   (card-set-total (hand-card-set hand)))
 
 (define (card-set-total card-set)
-  (if (empty? card-set)
+  (if (null? card-set)
       0
       (+ (card-value (car card-set)) (card-set-total (cdr card-set)))))
 

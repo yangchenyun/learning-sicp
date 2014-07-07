@@ -13,6 +13,7 @@
                  (play-hand house-strategy
                             house-initial-hand
                             (hand-up-card player-hand))))
+            ;; (display-hands player-hand house-hand)
             (cond ((> (hand-total house-hand) 21)
                    1)                      ; ``bust'': house loses
                   ((> (hand-total player-hand)
@@ -47,17 +48,73 @@
              (+ new-card (hand-total hand))))
 
 (define (hit? your-hand opponent-up-card)
-  (newline)
-  (print "Opponent up card ")
-  (print opponent-up-card)
-  (newline)
-  (print "Your Total: ")
-  (print (hand-total your-hand))
-  (newline)
-  (print "Hit? ")
+  (display "Opponent up card ")
+  (displayln opponent-up-card)
+  (display "Your Total: ")
+  (displayln (hand-total your-hand))
+  (display "Hit? ")
   (user-says-y?))
 
 (define (user-says-y?)
   (equal? (read-line) "y"))
 
-(print (twenty-one hit? hit?)) ;; test the playing
+(define (display-hands player-hand house-hand)
+  (displayln "----- Final Result -----")
+  (display "Player Hands: ")
+  (displayln (hand-total player-hand))
+  (display "House Hands Hands: ")
+  (displayln (hand-total house-hand)))
+
+(define (display-game-result game)
+  (cond (game (displayln "Player Win!"))
+        (else (displayln "House Win!"))))
+
+;; Problem 2
+(define (stop-at cap)
+  (λ (your-hand opponent-up-card)
+    (< (hand-total your-hand) cap)))
+
+;; (display-game-result (twenty-one hit? (stop-at 16)))
+
+;; Problem 3
+(define (test-strategy player-strategy house-strategy number-of-games)
+  (if (= number-of-games 0)
+      0
+      (+ (twenty-one player-strategy house-strategy)
+         (test-strategy player-strategy house-strategy (- number-of-games 1)))))
+
+;; (display (test-strategy (stop-at 16) (stop-at 15) 100))
+
+;; Problem 4
+(define (watch-player strategy)
+  (λ (player-hand house-up-card)
+    (let ((decision (strategy player-hand house-up-card)))
+      (display "Opponent up card ")
+      (displayln house-up-card)
+      (display "Your Total: ")
+      (displayln (hand-total player-hand))
+      (displayln decision)
+      decision)))
+
+;; (displayln (test-strategy (watch-player (stop-at 16)) (watch-player (stop-at 15)) 100))
+
+;; Problem 5
+(define (louis player-hand opponent-up-card)
+  (cond
+   ((< (hand-total player-hand) 12) #t)
+   ((> (hand-total player-hand) 16) #f)
+   ((= (hand-total player-hand) 12) (< opponent-up-card 4))
+   ((= (hand-total player-hand) 16) (= opponent-up-card 10))
+   (else (> opponent-up-card 6))))
+
+(displayln (test-strategy (stop-at 15) louis 10))
+(displayln (test-strategy (stop-at 16) louis 10))
+(displayln (test-strategy (stop-at 17) louis 10))
+
+;; Problem 6
+(define (both strategy1 strategy2)
+  (λ (play-hand opponent-up-card)
+    (and (strategy1 play-hand opponent-up-card)
+         (strategy2 play-hand opponent-up-card))))
+
+(displayln (test-strategy (both hit? (stop-at 17)) louis 1))

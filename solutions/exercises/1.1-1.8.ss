@@ -1,5 +1,4 @@
 #lang r5rs
-(atom? 1)
 ;; Exercise 1.1
 10
 (+ 5 3 4)

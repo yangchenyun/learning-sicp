@@ -144,7 +144,7 @@
     (= (expmod a n n) a))
   (try-it (+ 1 (random (- n 1)))))
 
-(define (fast-prime n times)
+(define (fast-prime? n times)
   (cond ((= 0 times) #t)
-        ((fermat-test n) (fast-prime n (- times 1)))
+        ((fermat-test n) (fast-prime? n (- times 1)))
         (else #f)))

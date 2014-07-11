@@ -236,20 +236,3 @@
 2
 
 ;; so in total the evaluation is 4
-
-;; Exercise 1.21
-(define (smallest-divisor n)
-  (define (divide? n test-dividor)
-    (= 0 (remainder n test-dividor)))
-  (define (find-divisor n test-dividor)
-    (cond
-     ((> (square test-dividor) n) n)
-     ((divide? n test-dividor) test-dividor)
-     (else (find-divisor n (+ 1 test-dividor)))))
-  (find-divisor n 2))
-
-(smallest-divisor 199)
-(smallest-divisor 1999)
-(smallest-divisor 19999)
-
-;;

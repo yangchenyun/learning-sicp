@@ -11,4 +11,3 @@ draws fractal curves.
 
 This assignment can be a bit mindblowing, since it gives such a fast
 immersion into higher-order procedures.
-

@@ -43,7 +43,7 @@
 
 ;;; TRANSLATE is of type (Sch-Num, Sch-Num --> Curve-Transform)
 
-(define (translate x0 y0)               
+(define (translate x0 y0)
   (lambda (curve)
     (lambda (t)
       (let ((ct (curve t)))
@@ -185,24 +185,3 @@
         (connect-rigidly ((rotate-around-origin theta) scaled-curve)
                          ((translate .5 (* (sin theta) scale-factor))
                           ((rotate-around-origin (- theta)) scaled-curve)))))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

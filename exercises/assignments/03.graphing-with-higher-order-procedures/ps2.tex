@@ -36,12 +36,12 @@
   \vtop{\vbox{\hrule%
      \hbox{\vrule\kern3pt%
  \vtop{\vbox{\kern3pt#1}\kern3pt}%
- \kern3pt\vrule}}% 
+ \kern3pt\vrule}}%
  \hrule}}
 
 
 
-\begin{document} 
+\begin{document}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -134,7 +134,7 @@ functions.  It is enough for the input function to have a type of the form
 $T\to T$, where $T$ may be any type.  So more generally, we can write
 \[\hbox{\tt thrice} : (T\to T) \to (T\to T) \]
 
-Composition, like multiplication, may be iterated.  Consider 
+Composition, like multiplication, may be iterated.  Consider
 the following:
 
 \beginlisp
@@ -178,7 +178,7 @@ are evaluated.  Briefly explain what goes on in each case.
 \end{enumerate}
 
 \paragraph{Exercise 1.B}  Test your predictions.  ({\bf Warning}:
-Before you do this, make sure you understand how to {\em interrupt} a 
+Before you do this, make sure you understand how to {\em interrupt} a
 Scheme evaluation.)
 
 \section{2. Curves as Procedures and Data}
@@ -282,7 +282,7 @@ We have provided a variety of other procedure \UT's and procedures which
 construct \UT's in the file {\tt curves.scm}.  For example,
 \begin{itemize}
 
-\item 
+\item
 {\tt translate} returns a \UT\ which rigidly moves a curve given distances
 along the $x$ and $y$ axes,
 
@@ -329,7 +329,7 @@ curve2}.
 
 \beginlisp
 (define (connect-rigidly curve1 curve2)
-  (lambda (t) 
+  (lambda (t)
     (if (< t (/ 1 2))
         (curve1 (* 2 t))
         (curve2 (- (* 2 t) 1)))))
@@ -428,7 +428,7 @@ to the \UT\ {\tt gosperize}:
 \begin{figure}
 \picture 4.50 in by 2.54 in (C-curve)
 \caption{{\protect\footnotesize
-Examples of the Gosper C curve at various levels, and 
+Examples of the Gosper C curve at various levels, and
 the recursive transformation that produces each level from the previous
 level.}}
 \label{Gosper}
@@ -525,8 +525,8 @@ used at each step of the recursion.
 The procedure {\tt param-gosperize} is almost like {\tt gosperize}, except
 that it takes an another argument, the angle of rotation, and implements
 the process shown in figure~\ref{param-geo}:
-        
-\beginlisp        
+
+\beginlisp
 (define (param-gosperize theta)
   (lambda (curve)
     (let ((scale-factor (/ (/ 1 (cos theta)) 2)))
@@ -703,4 +703,3 @@ one picture.  Spend some time playing with these ideas to see what you
 can come up with.
 
 \end{document}
-

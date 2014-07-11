@@ -49,21 +49,21 @@
 ;;; fit in WINDOW and then compute and display N points on the curve in WINDOW.
 
 (define (draw-points-squeezed-to-window window n)
-  (lambda (curve)    
+  (lambda (curve)
     ((draw-points-on window n)
      (((corners curve n) squeeze-rectangular-portion) curve))))
 
 (define (draw-connected-squeezed-to-window window n)
-  (lambda (curve)    
+  (lambda (curve)
     ((draw-connected window n)
      (((corners curve n) squeeze-rectangular-portion) curve))))
-
+
 ;;; CORNERS computes the max and min values of the x and y coordinates
 ;;; of n points on a given curve.
 ;;; It then applies a given procedure CORNERS-USER of type (NUM,NUM,NUM,NUM --> TYP)
 ;;; to the four corner values, where TYP may be any type.
 
-;;; CORNERS is of type (CURVE,NUM) --> (((NUM,NUM,NUM,NUM) --> TYP) --> TYP), 
+;;; CORNERS is of type (CURVE,NUM) --> (((NUM,NUM,NUM,NUM) --> TYP) --> TYP),
 
 (define (corners curve n)
   (let ((1/n (/ 1 n)))
@@ -84,18 +84,3 @@
                         (min y- yc)
                         (max y+ xc))))))))
       (aux 0 corners-user))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

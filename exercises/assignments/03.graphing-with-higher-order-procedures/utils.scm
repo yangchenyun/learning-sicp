@@ -1,4 +1,4 @@
-;;;; UTILS.SCM 
+;;;; UTILS.SCM
 
 
 ;;; USEFUL, SIMPLE, GENERAL PROCEDURES
@@ -28,7 +28,3 @@
 (define pi (* 4 pi/4))
 (define -pi (- pi))
 (define 2pi (* 2 pi))
-
-
-
-

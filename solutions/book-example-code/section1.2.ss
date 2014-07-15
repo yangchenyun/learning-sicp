@@ -127,6 +127,8 @@
      (else (find-divisor n (+ 1 test-dividor)))))
   (find-divisor n 2))
 
+(define (prime? n)
+  (= (smallest-divisor n) n))
 
 (define (expmod b exp m)
   (cond ((= exp 0) 1)

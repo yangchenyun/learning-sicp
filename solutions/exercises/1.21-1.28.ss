@@ -203,7 +203,7 @@
   (remainder (fast-expt b exp) m))
 
 ;; the old version would reduce the operands of square by calculate the remainder in the 'reduce' process
-;; thus reduce the steps required to do * operations
+;; thus reduce the size of integer required to do * operations
 ;; (expmod 120 10 13)
 ;; (remainder (square (expmod 120 5 13)) 13)
 ;; (remainder (square (remainder (* 120 (expmod 120 4)) 13)) 13)
@@ -248,6 +248,8 @@
       ((not (and (> a 0) (try-it a))) (= a 0))))
 
 (full-fermat-test 561)
+(full-fermat-test 6601)
 (prime? 561)
+(prime? 6601)
 
 ;; Exercise 1.28

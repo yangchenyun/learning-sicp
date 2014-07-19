@@ -199,8 +199,8 @@
         ((even? n) (square (fast-expt b (/ n 2))))
         (else (* b (fast-expt b (- n 1))))))
 
-(define (expmod b exp m)
-  (remainder (fast-expt b exp) m))
+;; (define (expmod b exp m)
+;;   (remainder (fast-expt b exp) m))
 
 ;; the old version would reduce the operands of square by calculate the remainder in the 'reduce' process
 ;; thus reduce the size of integer required to do * operations
@@ -253,3 +253,38 @@
 (prime? 6601)
 
 ;; Exercise 1.28
+
+(define (robin-miller-test n)
+  (define (nontrivial-sqrt-check i)
+    (if (and (= 1 (remainder (square i) n))
+          (> i 1)
+          (< i (- n 1)))
+        0
+        i))
+  (define (expmod b exp m)
+    (cond ((= exp 0) 1)
+          ((even? exp)
+           (remainder (square
+                       (nontrivial-sqrt-check
+                        (expmod b (/ exp 2) m)))
+                      m))
+          (else
+           (remainder
+            (* b (expmod b (- exp 1) m))
+            m))))
+  (define (try-it a)
+    (= (expmod a (- n 1) n) 1))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (repeat-test test n)
+  (lambda (x)
+    (if (> n 1)
+        (and (test x) ((repeat-test test (- n 1)) x))
+        (test x))))
+
+(define (test-all-numbers test numbers)
+  (map (lambda (i) (test i)) numbers))
+
+(test-all-numbers
+ (repeat-test robin-miller-test 10)
+ '(561 1105 1729 2465 2821 6601 6601 941 947 953 967 971 977 983 991 997))

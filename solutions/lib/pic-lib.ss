@@ -1,7 +1,3 @@
-(require racket/draw)
-(require racket/gui)
-(require racket/class)
-
 ;; utility
 (define (compose f g)
   (define (f*g x)
@@ -52,10 +48,13 @@
 		 (vector-scale (vector-ycor point-in-frame-coords)
                                (frame-edge2 frame))))))
 
+(require 2htdp/image)
 (define *screen-width* 128)
 (define *screen-height* 128)
 (define *last-screen-row* (- *screen-height* 1))
 (define *last-screen-column* (- *screen-width* 1))
+(define *canvas* (empty-scene *screen-width* *screen-height* "transparent"))
+(define *screen* (rectangle *screen-width* *screen-height* "solid" "white"))
 
 ;; a transformer performs operations on the frame passed in
 (define (make-relative-frame origin corner1 corner2)
@@ -66,34 +65,40 @@
 		    (vector-sub (m corner1) new-origin)
 		    (vector-sub (m corner2) new-origin))))))
 
-(define default-target (make-bitmap *screen-width* *screen-height*))
-(define default-dc (new bitmap-dc% [bitmap default-target]))
 (define unit-square-frame (make-frame (make-vect 0 0)
                                       (make-vect 1 0)
                                       (make-vect 0 1)))
+
+;; the racket draw system use top-left as origin point
 (define screen-frame
   ((make-relative-frame (make-vect 0 *screen-height*)
                         (make-vect *screen-width* *screen-height*)
                         (make-vect 0 0)) unit-square-frame))
 
 ;; primitive draw operations
-(define (draw-line s e)
+(define (draw-line image s e)
   (let ((sx (vector-xcor s))
         (sy (vector-ycor s))
         (ex (vector-xcor e))
         (ey (vector-ycor e)))
-    (send default-dc draw-line sx sy ex ey)))
+    (add-line image sx sy ex ey "black")))
 
 ;; segments painter
 (define (segments->painter segment-list)
   (lambda (frame)
-    (for-each
-     (lambda (segment)
-       (draw-line ((frame-coord-map frame)
+    (foldr
+     (lambda (segment canvas)
+       (draw-line canvas
+                  ((frame-coord-map frame)
                    (segment-start segment))
                   ((frame-coord-map frame)
                    (segment-end segment))))
+     *canvas*
      segment-list)))
+
+;; painter takes a frame and paint
+(define (paint painter)
+  (underlay *screen* (painter screen-frame)))
 
 ;; a procedure which applies the transformed frame on the painter
 (define (transform-painter origin corner1 corner2)
@@ -125,9 +130,10 @@
 
 (define (superpose painter1 painter2)
   (lambda (frame)
-    (painter1 frame)
-    (painter2 frame)))
+    (overlay (painter1 frame)
+             (painter2 frame))))
 
+;; painter takes a frame and paint
 (define (beside painter1 painter2)
   (let ((split-point (make-vect .5 0)))
     (superpose
@@ -143,15 +149,6 @@
 (define (below painter1 painter2)
   (rotate270 (beside (rotate90 painter2)
                      (rotate90 painter1))))
-
-(define (paint painter)
-  ;; the racket draw system use top-left as origin point
-  ;; the canvas has setup to be 100x100, so scale up the unit-frame
-  ;; erase the canvas and draw the background
-  (send default-dc erase)
-  (send default-dc draw-rectangle 0 0 *screen-width* *screen-height*)
-  (painter screen-frame)
-  (make-object image-snip% default-target))
 
 ;; The wave painter
 (define wave-segments
@@ -209,11 +206,3 @@
    (make-vect 0.999 0.144))))
 
 (define wave (segments->painter wave-segments))
-
-(define rogers
-  (load-painter
-   (build-path ".." "lib" "assets" "rogers.jpg")))
-
-(require 2htdp/image)
-((bitmap/file (build-path ".." "lib" "assets" "rogers.jpg"))
-)

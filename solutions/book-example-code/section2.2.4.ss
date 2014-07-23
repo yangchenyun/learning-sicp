@@ -23,7 +23,6 @@
         (beside painter (below smaller smaller)))))
 
 (paint (right-split wave 4))
-(paint (right-split rogers 4))
 
 (define (up-split painter n)
   (if (= n 0)
@@ -31,7 +30,7 @@
       (let ((smaller (up-split painter (- n 1))))
         (below painter (beside smaller smaller)))))
 
-(paint (up-split rogers 4))
+(paint (up-split wave 4))
 
 (define (corner-split painter n)
   (if (= n 0)
@@ -77,7 +76,7 @@
                                  rotate180 flip-vert)))
     (combine (corner-split painter n))))
 
-(paint-hires (square-limit wave 3))
+(paint (square-limit wave 3))
 
 ;; frame-* and vector-* procedures are provided by the painter.ss
 (define (frame-coord-map frame)
@@ -87,20 +86,18 @@
      (vector-add (vector-scale (vector-xcor v) (frame-edge1 frame))
                  (vector-scale (vector-ycor v) (frame-edge2 frame))))))
 
-(vector-scale 3 (make-vect 1 2))
-
 ;; a painter is just a procedure to display something to the frame
 ;; it includes
-(define (segments->painter segment-list)
-  (lambda (frame)
-    (for-each
-     (lambda (segment)
-       (draw-line ;; this is a os-dependent procedure
-        ((frame-coord-map frame)
-         (start-segment segment))
-        ((frame-coord-map frame)
-         (end-segment segment))))
-segment-list)))
+;; (define (segments->painter segment-list)
+;;   (lambda (frame)
+;;     (for-each
+;;      (lambda (segment)
+;;        (draw-line ;; this is a os-dependent procedure
+;;         ((frame-coord-map frame)
+;;          (start-segment segment))
+;;         ((frame-coord-map frame)
+;;          (end-segment segment))))
+;; segment-list)))
 
 ;; a transformer performs operations on the frame passed in
 (define (transform-painter painter origin corner1 corner2)
@@ -149,6 +146,4 @@ segment-list)))
                         split-point
                         (make-vect 1 0)
                         (make-vect 0.5 1))))
-      (lambda (frame)
-        (paint-left frame)
-        (paint-right frame)))))
+      (superpose paint-left paint-right))))

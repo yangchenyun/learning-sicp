@@ -9,7 +9,7 @@
       (let ((smaller (up-split painter (- n 1))))
         (below painter (beside smaller smaller)))))
 
-(paint (up-split rogers 4))
+(paint (up-split wave 4))
 
 ;; Exercise 2.45
 (define (split origin-split-combination split-combination)
@@ -21,10 +21,10 @@
           (origin-split-combination painter (split-combination smaller smaller))))))
 
 (define right-split (split beside below))
-(paint (right-split rogers 4))
+(paint (right-split wave 4))
 
 (define up-split (split below beside))
-(paint (up-split rogers 4))
+(paint (up-split wave 4))
 
 ;; Exercise 2.46
 ;; an implementation of vector
@@ -135,7 +135,7 @@
                      (make-vect 0 0)
                      (make-vect 1 1)))
 
-(paint (flip-horiz einstein))
+(paint (flip-horiz wave))
 
 (define (rotate180 painter)
   (transform-painter painter
@@ -143,7 +143,7 @@
                      (make-vect 0 1)
                      (make-vect 1 0)))
 
-(paint (rotate180 einstein))
+(paint (rotate180 wave))
 
 (define (rotate270 painter)
   (transform-painter painter
@@ -151,7 +151,7 @@
                      (make-vect 0 0)
                      (make-vect 1 1)))
 
-(paint (rotate270 einstein))
+(paint (rotate270 wave))
 
 ;; Exercise 2.51
 (define (below bottom-painter top-painter)
@@ -166,18 +166,16 @@
                            (make-vect 0 0)
                            (make-vect 1 0)
                            split-point)))
-      (lambda (frame)
-        (up-painter frame)
-        (bottom-painter frame)))))
+      (superpose up-painter bottom-painter))))
 
-(paint (below einstein rogers))
+(paint (below wave wave))
 
 (define (below bottom-painter top-painter)
   (lambda (frame)
     ((rotate90 (beside (rotate270 bottom-painter)
                        (rotate270 top-painter))) frame)))
 
-(paint (below einstein rogers))
+(paint (below wave wave))
 
 ;; Exercise 2.52
 ;; a.
@@ -218,4 +216,4 @@
     (let ((half (beside (rotate270 quarter) (rotate90 (flip-horiz quarter)))))
       (below (flip-vert half) half))))
 
-(paint (square-limit einstein 3))
+(paint (square-limit wave 3))

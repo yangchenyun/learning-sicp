@@ -1,4 +1,7 @@
 #lang r5rs
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
+
 ;; Exercise 1.1
 10
 (+ 5 3 4)
@@ -35,7 +38,6 @@
 
 ;; Exercise 1.3
 (define (sum-two-large-squares a b c)
-  (define (square x) (* x x))
   (define (sum-of-square a b)
     (+ (square a) (square b)))
   (if (> a b)
@@ -77,8 +79,6 @@
 ;; Exercise 1.6
 (abs x)
 
-(define (square x) (* x x))
-
 (define (sqrt x)
   (sqrt-iter 1.0 x))
 
@@ -92,9 +92,6 @@
 
 (define (improve guess x)
   (average guess (/ x guess)))
-
-(define (average x y)
-  (/ (+ x y) 2))
 
 (define (new-if predicate then-clause else-clause)
   (cond (predicate then-clause)

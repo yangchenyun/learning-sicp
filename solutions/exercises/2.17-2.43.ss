@@ -1,4 +1,6 @@
 #lang r5rs
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
 
 ;; Exercise 2.17
 (define (last-pair l)
@@ -52,7 +54,6 @@
                        (if (even? base) (even? i) (odd? i))) rest)))
 
 ;; Exercise 2.21
-(define (square x) (* x x))
 (define (square-list items)
   (if (null? items)
       '()

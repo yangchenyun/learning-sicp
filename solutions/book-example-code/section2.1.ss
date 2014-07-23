@@ -1,4 +1,6 @@
 #lang r5rs
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
 
 (define (add-rat x y)
   (make-rat (+ (* (numer x) (denom y))
@@ -41,10 +43,6 @@
 (print-rat (add-rat one-third one-third))
 
 ;; improve make-rat to reduce numbers to lowest terms
-(define (gcd a b)
-  (if (= b 0) a
-      (gcd b (remainder a b))))
-
 (define (make-rat n d)
   (let ((g (gcd n d)))
     (cons (/ n g) (/ d g))))

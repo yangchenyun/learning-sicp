@@ -1,12 +1,12 @@
 #lang r5rs
 (#%require (only racket/base current-process-milliseconds))
 (#%require (only math/base random-natural))
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
 
 (define (displayln expr)
   (display expr)
   (newline))
-
-(define (square x) (* x x))
 
 ;; Exercise 1.21
 (define (smallest-divisor n)
@@ -194,7 +194,6 @@
 ;; Exercise 1.25
 
 (define (fast-expt b n)
-  (define (square x) (* x x))
   (cond ((= n 0) 1)
         ((even? n) (square (fast-expt b (/ n 2))))
         (else (* b (fast-expt b (- n 1))))))

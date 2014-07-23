@@ -1,9 +1,8 @@
 #lang r5rs
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
 
-(define (average a b) (/ (+ a b) 2))
-(define (cube x) (* x x x))
 ;; 1.3.1 Procedures as Arguments
-
 (define (sum-integers a b)
   (if (> a b)
       0
@@ -35,8 +34,6 @@
          (sum term (next a) next b))))
 
 ;; now redefine the above three functions
-(define (inc n) (+ n 1))
-
 (define (sum-integers a b)
   (sum + a inc b))
 

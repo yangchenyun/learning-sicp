@@ -1,8 +1,7 @@
 #lang r5rs
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
 
-(define (square x) (* x x))
-(define (cube x) (* x x x))
-(define (average a b) (/ (+ a b) 2))
 ;; Exercise 1.29
 (define (sum term a next b)
   (if (> a b)
@@ -97,11 +96,6 @@
 
 (define (prime-square-sum a b)
   (filtered-accumulate + 0 square a (lambda (x) (+ x 1)) b prime?))
-
-(define (gcd a b)
-  (if (= b 0)
-      a
-      (gcd b (remainder a b))))
 
 (define (relative-prime-prod n)
   (filtered-accumulate * 1 (lambda (x) x)

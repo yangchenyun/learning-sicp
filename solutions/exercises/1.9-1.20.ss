@@ -1,8 +1,8 @@
-;; Exercise 1.9
-(define (square x) (* x x))
-(define (inc n) (+ n 1))
-(define (dec n) (- n 1))
+#lang r5rs
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
 
+;; Exercise 1.9
 ;; recursive process
 (define (+ a b)
   (if (= a 0)
@@ -128,7 +128,6 @@
 ;; Exercise 1.14
 
 ;; Exercise 1.15
-(define (cube x) (* x x x))
 (define (p x) (- (* 3 x) (* 4 (cube x))))
 (define (sine angle)
   (if (not (> (abs angle) 0.1)) angle
@@ -152,7 +151,6 @@
 ;; Exercise 1.16
 ;; iterative process with log(n) order of growth to calculate exponents
 (define (fast-expt b n)
-  (define (square x) (* x x))
   (define (expt-iter b n result)
     (cond
      ((= n 0) result)
@@ -197,11 +195,6 @@
                         (- count 1)))))
 
 ;; Exercise 1.20
-(define (gcd a b)
-  (if (= b 0)
-      a
-      (gcd b (remainder a b))))
-
 (gcd 206 40)
 ;; applied in normal order evaluation
 (gcd 40 (remainder 206 40))

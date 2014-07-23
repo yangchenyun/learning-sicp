@@ -1,4 +1,3 @@
-
 ;;; Project 1, 6.001, Spring 2005
 
 ;;; idea is to simulate a baseball robot
@@ -24,8 +23,8 @@
 ;; y(t)=0 (i.e. for what t_impact is y(t_impact)= 0).
 ;; note that there are two solutions, only one makes sense physically
 
-(define square
-  (lambda (x) (* x x)))
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
 
 ;; these are constants that will be useful to us
 (define gravity 9.8)  ;; in m/s
@@ -303,8 +302,6 @@
 (define (sqrt x)
   (define (abs x)
     (if (< x 0) (- x) x))
-  (define (average a b)
-    (/ (+ a b) 2))
   (define (improve guess x)
     (average guess (/ x guess)))
   (define (good-enough? guess)

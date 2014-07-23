@@ -1,4 +1,6 @@
 #lang r5rs
+(require racket/include)
+(include "../lib/arithmetic.ss")
 
 (define (count-leaves tree)
   (cond ((null? tree) 0)
@@ -52,7 +54,6 @@
       (cons l (enumerate-interval (+ l 1) h))))
 
 (define (atom? x) (not (pair? x)))
-(define (square x) (* x x))
 
 (define (enumerate-tree tree)
   (cond ((null? tree) '())

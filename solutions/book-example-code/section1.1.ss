@@ -1,3 +1,7 @@
+#lang r5rs
+(require racket/include)
+(include "../lib/arithmetic.ss")
+
 ;; pretty format
 (+ (* 3
        (+ (* 2 4)
@@ -81,14 +85,9 @@
 (define (average x y) (/ (+ x y) 2))
 (define (improve guess x) (average guess (/ x guess)))
 
-
-
 ;; procedural abstraction
-(define (square x) (* x x))
-
 (define (square x) (exp (double (log x))))
 (define (double x) (+ x x))
-
 
 ;; sqrt in a block structure
 (define (sqrt x)

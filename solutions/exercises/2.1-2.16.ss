@@ -1,4 +1,6 @@
 #lang r5rs
+(#%require racket/include)
+(include "../lib/arithmetic.ss")
 
 (define (numer r) (car r))
 (define (denom r) (cdr r))
@@ -7,11 +9,6 @@
   (display "/")
   (display (denom rat))
   (newline))
-(define (gcd a b)
-  (if (= b 0) a
-      (gcd b (remainder a b))))
-(define (average x y) (/ (+ x y) 2.0))
-(define (square x) (* x x))
 
 (define tolerence 0.00001)
 (define (fixed-point f first-guess)

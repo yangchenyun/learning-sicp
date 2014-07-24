@@ -7,8 +7,7 @@
                   underlay
                   overlay))
 
-(#%require (only racket/base
-                 foldr))
+(#%require (only racket/base foldr))
 
 ;; utility
 (define (compose f g)
@@ -76,6 +75,20 @@
 (define *canvas* (empty-scene *screen-width* *screen-height* "transparent"))
 (define *screen* (rectangle *screen-width* *screen-height* "solid" "white"))
 
+(define (set-painter-resolution! res)
+  (let ((res (inexact->exact res)))
+    (set! *screen-width* res)
+    (set! *screen-height* res)
+    (set! *last-screen-row* (- *screen-height* 1))
+    (set! *last-screen-column* (- *screen-width* 1))
+    (set! *screen* (rectangle *screen-width* *screen-height* "solid" "white"))
+    (set! *canvas* (empty-scene *screen-width* *screen-height* "transparent"))
+    (set! screen-frame
+          ((make-relative-frame (make-vect 0 *screen-height*)
+                                (make-vect *screen-width* *screen-height*)
+                                (make-vect 0 0)) unit-square-frame))
+    'set))
+
 ;; a transformer performs operations on the frame passed in
 (define (make-relative-frame origin corner1 corner2)
   (lambda (frame)
@@ -136,6 +149,9 @@
 (define (paint painter)
   (underlay *screen* (painter screen-frame)))
 
+(define (paint-hires painter)
+  (set-painter-resolution! 512)
+  (underlay *screen* (painter screen-frame)))
 ;; a procedure which applies the transformed frame on the painter
 (define (transform-painter origin corner1 corner2)
   (lambda (painter)

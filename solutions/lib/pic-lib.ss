@@ -8,6 +8,7 @@
                   overlay))
 
 (#%require (only racket/base foldr))
+(#%require (only racket/math nan?))
 
 ;; utility
 (define (compose f g)
@@ -47,6 +48,13 @@
 (define make-point cons)
 (define x-of car)
 (define y-of cdr)
+(define null-point (make-point +nan.0 +nan.0))
+(define (null-point? point)
+  (or
+   ((compose not real?) (x-of point))
+   ((compose not real?) (y-of point))
+   (nan? (x-of point))
+   (nan? (y-of point))))
 
 (define point->vector identity)
 
@@ -117,7 +125,7 @@
     (add-line image sx sy ex ey "black")))
 
 (define (draw-point image p)
-  (let ((point (circle 1 "solid" "black"))
+  (let ((point (circle .3 "solid" "black"))
         (px (vector-xcor p))
         (py (vector-ycor p)))
     (place-image point px py image)))
@@ -143,7 +151,7 @@
                   ((frame-coord-map frame)
                    (point->vector point)))) ;; treat point as vector
      *canvas*
-     point-list)))
+     (filter (compose not null-point?) point-list))))
 
 ;; painter takes a frame and paint
 (define (paint painter)
@@ -152,6 +160,26 @@
 (define (paint-hires painter)
   (set-painter-resolution! 512)
   (underlay *screen* (painter screen-frame)))
+
+;; only plot the [0 1] region
+(define (paint-curves curves . canvas-scale)
+  (let* ((canvas-scale (if (null? canvas-scale) 1 (car canvas-scale)))
+         (map-scale (/ .5 canvas-scale))
+         (transformer (transform-painter
+                       (make-point .5 .5)
+                       (make-point (+ map-scale .5) .5)
+                       (make-point .5 (+ map-scale .5)))))
+    (paint (transformer
+            (points->painter (foldr append '()
+                                    (map (lambda (curve)
+                                           (map curve (enumerate-unit-in 0.0001)))
+                                         curves)))))))
+
+(define (paint-curve curve . canvas-scale)
+  (if (null? canvas-scale)
+      (paint-curves (list curve))
+      (paint-curves (list curve) (car canvas-scale))))
+
 ;; a procedure which applies the transformed frame on the painter
 (define (transform-painter origin corner1 corner2)
   (lambda (painter)

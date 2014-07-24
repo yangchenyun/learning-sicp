@@ -1,3 +1,15 @@
+(#%require (only 2htdp/image
+                  rectangle
+                  add-line
+                  circle
+                  empty-scene
+                  place-image
+                  underlay
+                  overlay))
+
+(#%require (only racket/base
+                 foldr))
+
 ;; utility
 (define (compose f g)
   (define (f*g x)
@@ -8,6 +20,8 @@
   (cond ((= n 0) identity)
 	((= n 1) f)
 	(else (compose f (repeated f (- n 1))))))
+
+(define (identity x) x)
 
 ;; the vector
 (define make-vect cons)
@@ -48,7 +62,6 @@
 		 (vector-scale (vector-ycor point-in-frame-coords)
                                (frame-edge2 frame))))))
 
-(require 2htdp/image)
 (define *screen-width* 128)
 (define *screen-height* 128)
 (define *last-screen-row* (- *screen-height* 1))

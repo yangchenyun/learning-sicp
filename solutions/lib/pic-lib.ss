@@ -44,6 +44,13 @@
 (define segment-start car)
 (define segment-end cdr)
 
+;; the point
+(define make-point cons)
+(define x-of car)
+(define y-of cdr)
+
+(define point->vector identity)
+
 ;; the frame
 (define (make-frame origin edge1 edge2)
   (list 'frame origin edge1 edge2))
@@ -96,6 +103,12 @@
         (ey (vector-ycor e)))
     (add-line image sx sy ex ey "black")))
 
+(define (draw-point image p)
+  (let ((point (circle 1 "solid" "black"))
+        (px (vector-xcor p))
+        (py (vector-ycor p)))
+    (place-image point px py image)))
+
 ;; segments painter
 (define (segments->painter segment-list)
   (lambda (frame)
@@ -108,6 +121,16 @@
                    (segment-end segment))))
      *canvas*
      segment-list)))
+
+(define (points->painter point-list)
+  (lambda (frame)
+    (foldr
+     (lambda (point canvas)
+       (draw-point canvas
+                  ((frame-coord-map frame)
+                   (point->vector point)))) ;; treat point as vector
+     *canvas*
+     point-list)))
 
 ;; painter takes a frame and paint
 (define (paint painter)

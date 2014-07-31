@@ -19,7 +19,7 @@
 ;;FILTER: ((S --> Sch-Bool), List(S)) --> List(S)
 ;;(filter pred lst) returns list of element in LST satisfying PRED
 
-(define filter (lambda (pred list) (list-transform-positive list pred)))
+;; (define filter (lambda (pred list) (list-transform-positive list pred)))
 
 
 ;;FREE-VARIABLES: <body> --> List(<variable>)

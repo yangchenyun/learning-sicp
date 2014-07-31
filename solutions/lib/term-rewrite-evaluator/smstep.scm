@@ -276,7 +276,7 @@
            (import-from-scheme (cdr obj)))))
    ((symbol? obj)
     (make-symbol obj))
-   ((eq? obj (if #f 1))
+   ((eq? obj (if #f 1 (void)))
     submodel-useless-value)             ;#[useless-value]
    (else  obj)))                        ;self-evaluating objects are the same in the submodel
                                         ;and Scheme.  Management is not responsible for

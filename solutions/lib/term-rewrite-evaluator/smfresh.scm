@@ -85,12 +85,12 @@
 
 (define (make-suffixed-symbol root suffix)
   (if (eq? suffix 'no-suffix)
-      (string->symbol root))
-  (string->symbol
-   (string-append
-    root
-    "#"
-    (number->string suffix))))
+      (string->symbol root)
+      (string->symbol
+       (string-append
+        root
+        "#"
+        (number->string suffix)))))
 
 (define (enter-variable-into-table! var)
   ((split-off-suffix var)

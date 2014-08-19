@@ -223,7 +223,7 @@
 ;; O(logn)
 (define (adjoin-set x set)
   (cond
-   ((null? set) (list x))
+   ((null? set) (make-tree x '() '()))
    ((= (entry set) x) set)
    ((> x (entry set))
     (make-tree (entry set)

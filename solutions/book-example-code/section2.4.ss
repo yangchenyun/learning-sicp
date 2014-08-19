@@ -1,4 +1,6 @@
 #lang r5rs
+(#%require racket/include)
+(include "../lib/dispatch.ss")
 ;; The abstraction of complex number
 
 ;; selector

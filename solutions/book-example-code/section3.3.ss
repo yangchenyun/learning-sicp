@@ -297,6 +297,7 @@ z2
   ((wire 'add-action!) action-proc))
 
 ;; maintain a explicit agenda for `after-delay' procedure
+(define (make-agenda) (list 0))
 (define *the-agenda* (make-agenda))
 (define (reset-the-agenda) (set! *the-agenda* (make-agenda)))
 
@@ -548,22 +549,40 @@ z2
 
 ;; now test against our system
 (reset-the-agenda)
+(define (celsius-fahrenheit-converter C F)
+  (let
+      ((w (make-connector))
+       (u (make-connector))
+       (v (make-connector))
+       (x (make-connector))
+       (y (make-connector)))
+
+    (multiplier C w u) ;; C*w = u
+    (multiplier v x u) ;; v*x = u
+    (adder v y F) ;; F + y = v
+    (constant 5 x)
+    (constant 32 y)
+    (constant 9 w)
+    'ok))
+
 (define C (make-connector))
-(define w (make-connector))
 (define F (make-connector))
-(define u (make-connector))
-(define v (make-connector))
-(define x (make-connector))
-(define y (make-connector))
-
-(multiplier C w u) ;; C*w = u
-(multiplier v x u) ;; v*x = u
-(adder F y v) ;; F + y = v
-
-(constant 5 x)
-(constant -32 y)
-(constant 9 w)
 (constant 25 C)
+(celsius-fahrenheit-converter C F)
 
 (propagate)
 (get-value F) ;; should return the correct results, 77
+
+;; some thoughts with comparison of implementation in the book
+
+;; I tried to abstract a message system between connector and
+;; constrain but I found there will be a lot handling for equations
+;; and I choose to treat constrain as an enforcer of relationship
+;; between connectors and all the relation happened directly between
+;; connectors
+
+;; I also use the time scheduling model from last example, but it seems
+;; could be avoided at all
+
+;; I also missing the ability to checking the value to be set
+;; and the avoid loop notification

@@ -418,7 +418,7 @@ z2
 ;; as the wire before connect holds an value
 ;; and list of constrains it is connected to
 (define (make-connector)
-  (let ((value 0)
+  (let ((value #f)
         (resolved #f)
         (action-procs '()))
 
@@ -427,28 +427,38 @@ z2
             (cons proc action-procs)))
 
     (define (set-value! new-value)
-      (if (or (not resolved)
-              (not (= new-value value)))
-          (begin
-            (set! value new-value)
-            (set! resolved #t)
-            (call-each action-procs))
-          'done))
+      (cond ((not (has-value? self))
+             (begin
+               (set! value new-value)
+               (set! resolved #t)
+               (call-each action-procs)))
+            ((not (= new-value value))
+             (error "Contradiction" (list value new-value)))
+            (else 'ignored)))
 
-    (define (dispatch m)
+    (define (forget-value!)
+      (begin
+        (set! value #f)
+        (set! resolved #f)
+        'done))
+
+    (define (self m)
       (cond
        ((eq? m 'get-value) value)
        ((eq? m 'add-action!) accept-action!)
        ((eq? m 'set-value!) set-value!)
-       ((eq? m 'resolved?) resolved)
+       ((eq? m 'forget-value!) (forget-value!))
+       ((eq? m 'has-value?) resolved)
        (else (error "Unknown method for connector" m))))
-    dispatch))
+    self))
 
 ;; helper methods
 (define (get-value connector)
   (connector 'get-value))
-(define (resolved? connector)
-  (connector 'resolved?))
+(define (forget-value! connector)
+  (connector 'forget-value!))
+(define (has-value? connector)
+  (connector 'has-value?))
 (define (set-value! connector new-value)
   ((connector 'set-value!) new-value))
 (define (add-action! connector action)
@@ -464,7 +474,7 @@ z2
         c
         (iter (cdr l)
               (+ c (if (car l) 1 0)))))
-  (iter (map resolved? connectors) 0))
+  (iter (map has-value? connectors) 0))
 
 ;; add a listener to all other-connectors
 ;; apply the value of other-connectors to the proc
@@ -477,9 +487,7 @@ z2
                (apply proc (map get-value others))
                #f)))
       (if resolved-res
-          (after-delay constrain-delay
-                       (lambda ()
-                         (set-value! connector resolved-res))))))
+          (set-value! connector resolved-res))))
   (for-each (lambda (other)
               (add-action! other apply-when-resolved)) others))
 
@@ -503,19 +511,15 @@ z2
 (define (constant value connector)
   (set-value! connector value))
 
-(define constrain-delay 2)
-
 (define (probe-connector name connector)
   (add-action! connector
                (lambda ()
                  (newline)
                  (display name) (display " ")
-                 (display (current-time *the-agenda*))
                  (display " New-value = ")
                  (display (get-value connector)))))
 
 ;; a little tests over constrains
-(reset-the-agenda)
 (define a (make-connector))
 (define b (make-connector))
 (define s (make-connector))
@@ -525,13 +529,9 @@ z2
 (adder a b s)
 
 (set-value! a 3.14)
-;; a 0 New-value = 3
 (set-value! b 0.5)
-;; b 0 New-value = 4
-(propagate)
-;; s 2 New-value = 7
+;; s New-value = 7
 
-(reset-the-agenda)
 (define m (make-connector))
 (define n (make-connector))
 (define p (make-connector))
@@ -541,14 +541,12 @@ z2
 (multiplier m n p)
 
 (set-value! m 3.14)
-;; m 0 New-value = 3
+;; m New-value = 3
 (set-value! n 4.5)
-;; n 0 New-value = 4
-(propagate)
-;; p 2 New-value = 12
+;; n New-value = 4
+;; p New-value = 12
 
 ;; now test against our system
-(reset-the-agenda)
 (define (celsius-fahrenheit-converter C F)
   (let
       ((w (make-connector))
@@ -570,7 +568,6 @@ z2
 (constant 25 C)
 (celsius-fahrenheit-converter C F)
 
-(propagate)
 (get-value F) ;; should return the correct results, 77
 
 ;; some thoughts with comparison of implementation in the book

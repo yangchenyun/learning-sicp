@@ -309,6 +309,7 @@ z2
   (if (empty-agenda? *the-agenda*)
       'done
       (let ((first-item (first-agenda-item *the-agenda*)))
+        (sleep .1)
         (first-item)
         (remove-first-agenda-item! *the-agenda*)
         (propagate))))

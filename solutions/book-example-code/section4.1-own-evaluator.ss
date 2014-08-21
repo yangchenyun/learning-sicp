@@ -159,10 +159,14 @@
     (add-variable var (eval body env) env)))
 
 (define (eval-if exp env)
-  (let ((test (eval (if-predicate exp) env)))
-    (if test
-        (eval (if-consequence exp) env)
-        (eval (if-alternative exp) env))))
+  (if (true? (eval (if-predicate exp) env))
+      (eval (if-consequence exp) env)
+      (eval (if-alternative exp) env)))
+
+;; choose to use the same truth representation in implementing and implemented
+;; language
+(define (true? exp)
+  exp)
 
 (define (eval-sequence exps env)
   (cond ((last-exp? exps)

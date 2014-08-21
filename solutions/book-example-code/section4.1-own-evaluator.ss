@@ -233,13 +233,13 @@
 (define env-root? null?)
 
 (define *build-in-procedures*
-  '(+ - * / % cons car cdr null? = > < >= <=))
+  '(+ - * / % remainder cons car cdr null? = > < >= <= random))
 (define *keyword*
   '(if quote define set! lambda begin))
 (define (setup-env env)
   (set-symbols *build-in-procedures*
                (map make-primitive-procedure
-                    (list + - * / modulo cons car cdr null? = > < >= <=))
+                    (list + - * / modulo remainder cons car cdr null? = > < >= <= random))
                env)
   (set-symbol 'true #t env)
   (set-symbol 'false #f env))
@@ -378,3 +378,37 @@
                (map (lambda (x) (+ x 1))
                     '(1 2 3))))
         '(2 3 4))
+
+(assert 'fermat-test-prog
+        (run
+         '((define (square x) (* x x))
+           (define (even? n) (= 0 (remainder n 2)))
+           (define (map proc list)
+             (if (null? list)
+                 '()
+                 (cons
+                  (proc (car list))
+                  (map proc (cdr list)))))
+           (define (expmod b exp m)
+             (cond ((= exp 0) 1)
+                   ((even? exp)
+                    (remainder
+                     (square (expmod b (/ exp 2) m))
+                     m))
+                   (else
+                    (remainder
+                     (* b (expmod b (- exp 1) m))
+                     m))))
+
+           (define (fermat-test n)
+             (define (try-it a)
+               (= (expmod a n n) a))
+             (try-it (+ 1 (random (- n 1)))))
+
+           (define (fast-prime? n times)
+             (cond ((= 0 times) 'true)
+                   ((fermat-test n) (fast-prime? n (- times 1)))
+                   (else 'false)))
+           (map (lambda (x) (fast-prime? x 10))
+                '(2 3 4 5 93 561 1105 1729 2465))))
+        '(true true false true false true true true true))

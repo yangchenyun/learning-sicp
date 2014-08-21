@@ -73,6 +73,44 @@
 (define operator car)
 (define operands cdr)
 
+
+(define (macro? exp)
+  (let ((type (car exp)))
+    (memq type *build-in-macro*)))
+(define *build-in-macro* '(cond))
+
+;; first defined in a case styles
+(define (expand exp)
+  (cond
+   ((cond? exp) (expand-cond exp))
+   (else
+    (error "unknown macro: EXPAND" exp))))
+
+(define (cond? exp)
+  (tagged-with? exp 'cond))
+(define cond-clauses cdr)
+(define cond-clause-predicate car)
+(define cond-clause-actions cdr)
+(define (cond-else-clause? exp)
+  (tagged-with? exp 'else))
+
+(define (expand-cond exp)
+  (define (expand-clauses clauses)
+    (if (null? clauses)
+        #f
+        (let ((first (car clauses))
+              (rest (cdr clauses)))
+          (if (cond-else-clause? first)
+              (if (null? rest)
+                  (seq->exp (cond-clause-actions first))
+                  (error "else isn't the last clause" clauses))
+              (make-if
+               (cond-clause-predicate first)
+               (seq->exp (cond-clause-actions first))
+               (expand-clauses rest))
+              ))))
+  (expand-clauses (cond-clauses exp)))
+
 (define (eval exp env)
   (cond
    ((self-evaluating? exp)
@@ -87,6 +125,9 @@
     (eval-definition exp env))
    ((if? exp)
     (eval-if exp env))
+   ;; expand macro before application
+   ((macro? exp)
+    (eval (expand exp) env))
    ((lambda? exp)
     (make-procedure
      (lambda-formals exp)
@@ -281,6 +322,23 @@
 (assert 'if-false
         (run '((if false 'true 'false)))
         'false)
+
+(assert 'cond-two-clauses
+        (run '((cond
+                (true 'true)
+                (false 'false)))) 'true)
+
+(assert 'cond-multiple-clauses
+        (run '((cond
+                ((= 1 3) 1)
+                ((= 2 3) 2)
+                ((= 3 3) 3)))) 3)
+
+(assert 'cond-else-clauses
+        (run '((cond
+                ((= 1 3) 1)
+                ((= 2 3) 2)
+                (else 3)))) 3)
 
 (assert 'anonymous-conditional-lambda
         (run '(((if false

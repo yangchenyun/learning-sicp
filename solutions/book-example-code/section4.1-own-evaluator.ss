@@ -142,7 +142,8 @@
     (eval-sequence (begin-actions exp) env))
    ((application? exp)
     (apply (eval (operator exp) env)
-           (list-of-values (operands exp) env)))
+           (map (lambda (operand)
+                  (eval operand env)) (operands exp))))
    (else
     (error "Unknown expression type: EVAL" exp))))
 
@@ -169,12 +170,6 @@
         (else
          (eval (first-exp exps) env)
          (eval-sequence (rest-exps exps) env))))
-
-(define (list-of-values exps env)
-  (if (null? exps)
-      '()
-      (cons (eval (car exps) env)
-            (list-of-values (cdr exps) env))))
 
 (define (apply procedure arguments)
   (cond ((primitive-procedure? procedure)

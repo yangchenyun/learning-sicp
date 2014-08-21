@@ -210,7 +210,6 @@
 (define (primitive-procedure? procedure)
   (eq? 'primitive (type-tag procedure)))
 
-
 ;; environment is a pair containing the parent env and a table
 ;; parent-env | hash-table
 (define (make-new-env parent)
@@ -234,10 +233,10 @@
       'done))
 
 ;; operations on the environment hierarchy
-(define *global-env* (make-new-env '()))
-(define (global-env? env) (null? (car env)))
-(define (reset-global-env)
-  (set! *global-env* (make-new-env '())))
+(define (make-global-env)
+  (make-new-env '()))
+(define env-root? null?)
+
 (define *build-in-procedures*
   '(+ - * / % cons car cdr null? = > < >= <=))
 (define *keyword*
@@ -251,7 +250,7 @@
   (set-symbol 'false #f env))
 
 (define (lookup-variable symbol env)
-  (if (null? env)
+  (if (env-root? env)
       (error "variable not found: LOOKUP-VARIABLE" symbol)
       (let ((content (search-symbol symbol env)))
         (if (eq? content 'not-found)
@@ -261,7 +260,7 @@
 (define add-variable set-symbol)
 
 (define (update-variable symbol new-content env)
-  (if (null? env)
+  (if (env-root? env)
       (error "variable doesn't exist: UPDATE-VARIABLE" symbol)
       (let ((content (search-symbol symbol env)))
         (if (eq? content 'not-found)

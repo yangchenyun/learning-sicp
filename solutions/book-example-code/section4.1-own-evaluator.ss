@@ -73,43 +73,48 @@
 (define operator car)
 (define operands cdr)
 
-
+;; macro pre-processor
 (define (macro? exp)
   (let ((type (car exp)))
     (memq type *build-in-macro*)))
-(define *build-in-macro* '(cond))
+(define *build-in-macro* '())
 
 ;; first defined in a case styles
 (define (expand exp)
-  (cond
-   ((cond? exp) (expand-cond exp))
-   (else
-    (error "unknown macro: EXPAND" exp))))
+  (let ((expand-proc (get 'expand (car exp))))
+    (if expand-proc
+        (expand-proc exp)
+        (error "unknown macro: EXPAND" exp))))
 
-(define (cond? exp)
-  (tagged-with? exp 'cond))
-(define cond-clauses cdr)
-(define cond-clause-predicate car)
-(define cond-clause-actions cdr)
-(define (cond-else-clause? exp)
-  (tagged-with? exp 'else))
+(define (install-macro-cond)
+  (define cond-clauses cdr)
+  (define cond-clause-predicate car)
+  (define cond-clause-actions cdr)
+  (define (cond-else-clause? exp)
+    (tagged-with? exp 'else))
 
-(define (expand-cond exp)
-  (define (expand-clauses clauses)
-    (if (null? clauses)
-        #f
-        (let ((first (car clauses))
-              (rest (cdr clauses)))
-          (if (cond-else-clause? first)
-              (if (null? rest)
-                  (seq->exp (cond-clause-actions first))
-                  (error "else isn't the last clause" clauses))
-              (make-if
-               (cond-clause-predicate first)
-               (seq->exp (cond-clause-actions first))
-               (expand-clauses rest))
-              ))))
-  (expand-clauses (cond-clauses exp)))
+  (define (expand exp)
+    (define (expand-clauses clauses)
+      (if (null? clauses)
+          #f
+          (let ((first (car clauses))
+                (rest (cdr clauses)))
+            (if (cond-else-clause? first)
+                (if (null? rest)
+                    (seq->exp (cond-clause-actions first))
+                    (error "else isn't the last clause" clauses))
+                (make-if
+                 (cond-clause-predicate first)
+                 (seq->exp (cond-clause-actions first))
+                 (expand-clauses rest))
+                ))))
+    (expand-clauses (cond-clauses exp)))
+
+  (set! *build-in-macro*
+        (cons 'cond *build-in-macro*))
+  (put 'expand 'cond expand))
+
+(install-macro-cond)
 
 (define (eval exp env)
   (cond

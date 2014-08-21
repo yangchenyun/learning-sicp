@@ -27,7 +27,7 @@
 
 (define (def-body exp)
   (if (pair? (cadr exp))
-      (make-lambda (cdadr exp) (make-begin (cddr exp)))
+      (make-lambda (cdadr exp) (seq->exp (cddr exp)))
       (caddr exp)))
 
 (define (assignment? exp)
@@ -43,6 +43,9 @@
   (if (not (null? cdddr))
       (cadddr exp)
       #f))
+(define (make-if predicate consequence alternative)
+  (list 'if predicate consequence alternative))
+
 (define (lambda? exp)
   (tagged-with? exp 'lambda))
 (define lambda-formals cadr)
@@ -54,6 +57,12 @@
   (tagged-with? exp 'begin))
 (define (make-begin exps)
   (attach-tag 'begin exps))
+(define (seq->exp seqs)
+  (cond
+   ((null? seqs) '())
+   ((last-exp? seqs) (first-exp seqs))
+   (else (make-begin seqs))))
+
 (define begin-actions cdr)
 (define (last-exp? exps)
   (null? (rest-exps exps)))

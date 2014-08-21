@@ -15,19 +15,19 @@
        (not (memq exp *keyword*))))
 (define (quote? exp)
   (tagged-with? exp 'quote))
-(define text-of-quote cdr)
+(define text-of-quote cadr)
 
 (define (definition? exp)
   (tagged-with? exp 'define))
 
 (define (def-variable exp)
   (if (pair? (cadr exp))
-      (caadr) ;; syntax with sugar
+      (caadr exp) ;; syntax with sugar
       (cadr exp)))
 
 (define (def-body exp)
   (if (pair? (cadr exp))
-      (make-lambda (cdadr exp) (caddr exp))
+      (make-lambda (cdadr exp) (make-begin (cddr exp)))
       (caddr exp)))
 
 (define (assignment? exp)
@@ -52,6 +52,8 @@
 
 (define (begin? exp)
   (tagged-with? exp 'begin))
+(define (make-begin exps)
+  (attach-tag 'begin exps))
 (define begin-actions cdr)
 (define (last-exp? exps)
   (null? (rest-exps exps)))
@@ -163,7 +165,7 @@
 (define (set-symbol symbol content env)
   (hash-set! (env-table env) symbol content))
 (define (search-symbol symbol env)
-  (hash-ref (env-table env) symbol #f))
+  (hash-ref (env-table env) symbol 'not-found))
 (define (set-symbols list-of-symbols list-of-contents env)
   (if (not (or (null? list-of-symbols)
                (null? list-of-contents)))
@@ -182,22 +184,24 @@
 (define (reset-global-env)
   (set! *global-env* (make-new-env '())))
 (define *build-in-procedures*
-  '(+ - * / cons car cdr null?))
+  '(+ - * / % cons car cdr null? = > < >= <=))
 (define *keyword*
   '(if quote define set! lambda begin))
 (define (setup-env env)
   (set-symbols *build-in-procedures*
                (map make-primitive-procedure
-                    (list + - * / cons car cdr null?))
-               env))
+                    (list + - * / modulo cons car cdr null? = > < >= <=))
+               env)
+  (set-symbol 'true #t env)
+  (set-symbol 'false #f env))
 
 (define (lookup-variable symbol env)
   (if (null? env)
       (error "variable not found: LOOKUP-VARIABLE" symbol)
       (let ((content (search-symbol symbol env)))
-        (if content
-            content
-            (lookup-variable symbol (parent-env env))))))
+        (if (eq? content 'not-found)
+            (lookup-variable symbol (parent-env env))
+            content))))
 
 (define add-variable set-symbol)
 
@@ -205,9 +209,9 @@
   (if (null? env)
       (error "variable doesn't exist: UPDATE-VARIABLE" symbol)
       (let ((content (search-symbol symbol env)))
-        (if content
-            (set-symbol symbol new-content env)
-            (update-variable symbol new-content (parent-env env))))))
+        (if (eq? content 'not-found)
+            (update-variable symbol new-content (parent-env env))
+            (set-symbol symbol new-content env)))))
 
 (define (extend-env formals arguments env)
   (let ((new-env (make-new-env env)))
@@ -224,17 +228,87 @@
     (setup-env global-env)
     (eval-sequence prog global-env)))
 
-;; simplest expression
-(run '(2))
-(run '("3"))
-(run '((+ 1 2)))
+;; tests
+(define (assert name res expect)
+  (if (not (equal? res expect))
+      (error "Failed test:" name (list res expect))
+      'ok))
 
-;; definition and variables
-(run '((define x 1)
-       (define y 2)
-       (+ x y)))
+;; primitive expression
+(assert 'number-test
+        (run '(2)) 2)
+(assert 'string-test
+        (run '("3")) "3")
+(assert 'quote-test
+        (run '((quote (+ 1 2))))
+        '(+ 1 2))
+
+(assert 'primitive-procedure
+        (run '((+ 1 2)))
+        3)
+
+(assert 'definition
+        (run '((define x 1)
+               (define y 2)
+               (+ x y)))
+        3)
 
 ;; calling lambda
-(run '((define add
-           (lambda (u w) (+ w u)))
-         (add 1 2)))
+(assert 'simple-lambda
+        (run '((define add
+                 (lambda (u w) (+ w u)))
+               (add 1 2)))
+        3)
+
+(assert 'define-syntax-sugar
+        (run '((define (identity a) a)
+               (identity 2)))
+        2)
+
+(assert 'if-true
+        (run '((if true 'true 'false)))
+        'true)
+
+(assert 'if-false
+        (run '((if false 'true 'false)))
+        'false)
+
+(assert 'anonymous-conditional-lambda
+        (run '(((if false
+                    (lambda (x) (+ x 1))
+                    (lambda (x) (+ x 2)))
+                5)))
+        7)
+
+(assert 'recursive-procedure
+        (run '((define (factorial n)
+                 (if (= n 1)
+                     1
+                     (* n (factorial (- n 1)))))
+               (factorial 10)))
+        3628800)
+
+(assert 'nested-defines
+        (run '((define (fib-i n)
+                 (define (fib-iter a b count)
+                   (if (= count n)
+                       b
+                       (fib-iter
+                        b
+                        (+ a b)
+                        (+ count 1))))
+                 (fib-iter 0 1 1))
+               (fib-i 10)))
+        '55)
+
+(assert 'map-procedure
+        (run '((define (map proc list)
+                 (if (null? list)
+                     '()
+                     (cons
+                      (proc (car list))
+                      (map proc (cdr list)))))
+
+               (map (lambda (x) (+ x 1))
+                    '(1 2 3))))
+        '(2 3 4))

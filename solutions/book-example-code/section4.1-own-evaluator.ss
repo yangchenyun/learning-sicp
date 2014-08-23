@@ -97,7 +97,7 @@
   (define (expand exp)
     (define (expand-clauses clauses)
       (if (null? clauses)
-          #f
+          'false
           (let ((first (car clauses))
                 (rest (cdr clauses)))
             (if (cond-else-clause? first)

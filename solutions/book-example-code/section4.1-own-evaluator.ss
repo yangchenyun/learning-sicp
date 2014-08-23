@@ -1,4 +1,4 @@
-#lang r5rs
+#lang racket
 (load "../lib/dispatch.ss")
 
 ;; (define apply-with-underlying-system apply)
@@ -77,6 +77,7 @@
 (define (macro? exp)
   (let ((type (car exp)))
     (memq type *build-in-macro*)))
+
 (define *build-in-macro* '())
 
 ;; first defined in a case styles
@@ -114,7 +115,46 @@
         (cons 'cond *build-in-macro*))
   (put 'expand 'cond expand))
 
+(define (install-macro-or)
+  (define or-clauses cdr)
+  (define (expand exp)
+    (define (expand-clauses clauses)
+      (if (null? clauses)
+          'false
+          (let ((first (car clauses))
+                (rest (cdr clauses)))
+            (make-if first
+                     first
+                     (expand-clauses rest)))))
+    (expand-clauses (or-clauses exp)))
+
+  (set! *build-in-macro*
+        (cons 'or *build-in-macro*))
+  (put 'expand 'or expand))
+
+(define (install-macro-and)
+  (define and-clauses cdr)
+  (define (expand exp)
+    (define (expand-clauses clauses)
+      (cond ((null? clauses) 'true)
+            ((last-exp? clauses)
+             (make-if (first-exp clauses)
+                      (first-exp clauses)
+                      'false))
+            (else (let ((first (car clauses))
+                        (rest (cdr clauses)))
+                    (make-if first
+                             (expand-clauses rest)
+                             'false)))))
+    (expand-clauses (and-clauses exp)))
+
+  (set! *build-in-macro*
+        (cons 'and *build-in-macro*))
+  (put 'expand 'and expand))
+
 (install-macro-cond)
+(install-macro-or)
+(install-macro-and)
 
 (define (eval exp env)
   (cond
@@ -342,6 +382,44 @@
                 ((= 1 3) 1)
                 ((= 2 3) 2)
                 (else 3)))) 3)
+
+(assert 'or-test-no-clause
+        (run '((or))) #f)
+
+(assert 'or-test-middle
+        (run '((define a 'init)
+               (or ((lambda ()
+                      (set! a 'changed)
+                      a)) 1 false))) 'changed)
+
+(assert 'or-test-no-unnecessary-eval
+        (run '((define a 'init)
+               (or 1 ((lambda ()
+                        (set! a 'changed))) false)
+               a)) 'init)
+
+(assert 'or-test-false
+        (run '((or false false false)))
+        #f)
+
+(assert 'and-test-no-clause
+        (run '((and))) #t)
+
+(assert 'and-test-true
+        (run '((and true true))) #t) ;; FIXME: true evals to #t in the implemented lang
+
+(assert 'and-test-false
+        (run '((and false true))) #f)
+
+(assert 'and-test-last-exp
+        (run '((and true 1))) 1)
+
+(assert 'and-test-no-unnecessary
+        (run '((define a 'init)
+               (and false ((lambda ()
+                             (set! a 'changed))))
+               a
+               )) 'init)
 
 (assert 'anonymous-conditional-lambda
         (run '(((if false

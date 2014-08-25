@@ -199,14 +199,12 @@
 (define (install-macro-let*)
   (define let*-declare-clauses cadr)
   (define let*-body-clauses cddr)
-  (define (make-let declare-clauses body-clauses)
-    (append (list 'let declare-clauses) (list body-clauses)))
 
   (define (build-nested-lets declares body)
     (if (null? declares)
         (seq->exp body)
-        (make-let (list (car declares))
-                  (build-nested-lets (cdr declares) body))))
+        (append (list 'let (list (car declares)))
+                (list (build-nested-lets (cdr declares) body)))))
 
   (define (expand exp)
     (build-nested-lets

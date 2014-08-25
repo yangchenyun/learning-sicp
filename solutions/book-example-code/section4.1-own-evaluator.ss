@@ -159,9 +159,22 @@
         (cons 'and *build-in-macro*))
   (put 'expand 'and expand))
 
+(define (install-macro-let)
+  (define let-declare-clauses cadr)
+  (define let-body-clauses cddr)
+  (define (expand exp)
+    (let ((vars (map car (let-declare-clauses exp)))
+          (exps (map cadr (let-declare-clauses exp))))
+      (cons (make-lambda vars (seq->exp (let-body-clauses exp))) exps)))
+
+  (set! *build-in-macro*
+        (cons 'let *build-in-macro*))
+  (put 'expand 'let expand))
+
 (install-macro-cond)
 (install-macro-or)
 (install-macro-and)
+(install-macro-let)
 
 (define (eval exp env)
   (cond
@@ -434,6 +447,10 @@
                a
                )) 'init)
 
+(assert 'let-definition
+        (run '((let ((a 1) (b 2))
+                 (+ a b)))) 3)
+
 (assert 'anonymous-conditional-lambda
         (run '(((if false
                     (lambda (x) (+ x 1))
@@ -473,6 +490,25 @@
                (map (lambda (x) (+ x 1))
                     '(1 2 3))))
         '(2 3 4))
+
+(assert 'even-fib
+        (run '((define (even? n) (= 0 (remainder n 2)))
+               (define (fib n)
+                 (define (fib-iter a b count)
+                   (if (= count 0)
+                       b
+                       (fib-iter (+ a b) a (- count 1))))
+                 (fib-iter 1 0 n))
+               (define (even-fibs n)
+                 (define (next k)
+                   (if (> k n)
+                       '()
+                       (let ((f (fib k)))
+                         (if (even? f)
+                             (cons f (next (+ k 1)))
+                             (next (+ k 1))))))
+                 (next 0))
+               (even-fibs 10))) '(0 2 8 34))
 
 (assert 'fermat-test-prog
         (run

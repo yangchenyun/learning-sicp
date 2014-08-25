@@ -215,11 +215,68 @@
         (cons 'let* *build-in-macro*))
   (put 'expand 'let* expand))
 
+(define (install-macro-do)
+  (define do-declares cadr)
+  (define (do-vars exp)
+    (map car (do-declares exp)))
+  (define (do-inits exp)
+    (map cadr (do-declares exp)))
+
+  (define (do-steps exp)
+    (map (lambda (declare)
+           (if (null? (cddr declare))
+               (car declare) ;; keep the same value
+               (caddr declare))) (do-declares exp)))
+  (define do-test caaddr)
+  (define do-result-exps cdaddr)
+  (define do-commands cdddr)
+
+  (define (make-let-declares exp)
+    (map (lambda (declare)
+           (cons (car declare)
+                 (list (cadr declare)))) (do-declares exp)))
+
+  (define (make-let declares body)
+    (append (list 'let declares)
+            body))
+
+  (define (expand exp)
+    (define iter-call
+      (cons 'iter (do-vars exp)))
+
+    (define iter-body
+      ;; evaluate commands
+      (append (seq->exp (do-commands exp))
+              (list (make-let
+                     ;; evaluate steps
+                     (map (lambda (var step)
+                            (list var step))
+                          (do-vars exp)
+                          (do-steps exp))
+                     ;; binding and execute the iter in new environment
+                     (list iter-call)))))
+
+    (define iter-definition
+      (make-definition 'iter
+                       (make-lambda (do-vars exp)
+                                    (make-if
+                                     (do-test exp)
+                                     (seq->exp (do-result-exps exp))
+                                     (seq->exp iter-body)
+                                     ))))
+
+    (make-let (make-let-declares exp) (list iter-definition iter-call)))
+
+  (set! *build-in-macro*
+        (cons 'do *build-in-macro*))
+  (put 'expand 'do expand))
+
 (install-macro-cond)
 (install-macro-or)
 (install-macro-and)
 (install-macro-let)
 (install-macro-let*)
+(install-macro-do)
 
 (define (eval exp env)
   (cond
@@ -509,6 +566,11 @@
                       (y (+ x 2))
                       (z (+ x y 5)))
                  (* x z)))) 39)
+
+(assert 'do-iteration
+        (run '((let ((x '(1 3 5 7 9)))
+                 (do ((x x (cdr x))
+                      (sum 0 (+ sum (car x)))) ((null? x) sum))))) 25)
 
 (assert 'anonymous-conditional-lambda
         (run '(((if false

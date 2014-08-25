@@ -30,6 +30,9 @@
       (make-lambda (cdadr exp) (seq->exp (cddr exp)))
       (caddr exp)))
 
+(define (make-definition var exp)
+  (list 'define var exp))
+
 (define (assignment? exp)
   (tagged-with? exp 'set!))
 (define assignment-variable cadr)
@@ -160,12 +163,34 @@
   (put 'expand 'and expand))
 
 (define (install-macro-let)
-  (define let-declare-clauses cadr)
-  (define let-body-clauses cddr)
-  (define (expand exp)
+  (define (make-let declare-clauses body-clauses)
+    (append (list 'let declare-clauses) body-clauses))
+  (define (named-let? exp)
+    (not (pair? (cadr exp))))
+
+  (define (expand-normal-let exp)
+    (define let-declare-clauses cadr)
+    (define let-body-clauses cddr)
     (let ((vars (map car (let-declare-clauses exp)))
           (exps (map cadr (let-declare-clauses exp))))
       (cons (make-lambda vars (seq->exp (let-body-clauses exp))) exps)))
+
+  (define (expand-named-let exp)
+    (define let-var cadr)
+    (define let-declare-clauses caddr)
+    (define let-body-clauses cdddr)
+
+    (make-let (let-declare-clauses exp)
+              (append
+               (list (make-definition (let-var exp)
+                                      (make-lambda (map car (let-declare-clauses exp))
+                                                   (seq->exp (let-body-clauses exp)))))
+               (let-body-clauses exp))))
+
+  (define (expand exp)
+    (if (named-let? exp)
+        (expand-named-let exp)
+        (expand-normal-let exp)))
 
   (set! *build-in-macro*
         (cons 'let *build-in-macro*))
@@ -472,6 +497,14 @@
 (assert 'let-definition
         (run '((let ((a 1) (b 2))
                  (+ a b)))) 3)
+
+(assert 'named-let
+        (run '((let fib-iter ((a 1) (b 0) (count 10))
+                 (if (= count 0)
+                     b
+                     (fib-iter (+ a b)
+                               a
+                               (- count 1)))))) 55)
 
 (assert 'let*-macro
         (run '((let* ((x 3)

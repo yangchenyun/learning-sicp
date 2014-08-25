@@ -93,6 +93,10 @@
   (define cond-clause-actions cdr)
   (define (cond-else-clause? exp)
     (tagged-with? exp 'else))
+  (define (cond-recipient-clause? exp)
+    (eq? '=> (cadr exp)))
+  (define (cond-clause-recipient exp)
+    (caddr exp))
 
   (define (expand exp)
     (define (expand-clauses clauses)
@@ -106,7 +110,10 @@
                     (error "else isn't the last clause" clauses))
                 (make-if
                  (cond-clause-predicate first)
-                 (seq->exp (cond-clause-actions first))
+                 (if (cond-recipient-clause? first)
+                     (cons (cond-clause-recipient first)
+                           (list (cond-clause-predicate first)))
+                     (seq->exp (cond-clause-actions first)))
                  (expand-clauses rest))
                 ))))
     (expand-clauses (cond-clauses exp)))
@@ -277,13 +284,13 @@
 (define env-root? null?)
 
 (define *build-in-procedures*
-  '(+ - * / % remainder cons car cdr null? = > < >= <= random))
+  '(+ - * / % remainder assoc cons car cdr null? = > < >= <= random))
 (define *keyword*
   '(if quote define set! lambda begin))
 (define (setup-env env)
   (set-symbols *build-in-procedures*
                (map make-primitive-procedure
-                    (list + - * / modulo remainder cons car cdr null? = > < >= <= random))
+                    (list + - * / modulo remainder assoc cons car cdr null? = > < >= <= random))
                env)
   (set-symbol 'true #t env)
   (set-symbol 'false #f env))
@@ -382,6 +389,12 @@
                 ((= 1 3) 1)
                 ((= 2 3) 2)
                 (else 3)))) 3)
+
+(assert 'cond-recipient-clause
+        (run '((define (cadr list)
+                 (car (cdr list)))
+               (cond ((assoc 'b '((a 1) (b 2))) => cadr)
+                     (else false)))) 2)
 
 (assert 'or-test-no-clause
         (run '((or))) #f)

@@ -171,10 +171,32 @@
         (cons 'let *build-in-macro*))
   (put 'expand 'let expand))
 
+(define (install-macro-let*)
+  (define let*-declare-clauses cadr)
+  (define let*-body-clauses cddr)
+  (define (make-let declare-clauses body-clauses)
+    (append (list 'let declare-clauses) (list body-clauses)))
+
+  (define (build-nested-lets declares body)
+    (if (null? declares)
+        (seq->exp body)
+        (make-let (list (car declares))
+                  (build-nested-lets (cdr declares) body))))
+
+  (define (expand exp)
+    (build-nested-lets
+     (let*-declare-clauses exp)
+     (let*-body-clauses exp)))
+
+  (set! *build-in-macro*
+        (cons 'let* *build-in-macro*))
+  (put 'expand 'let* expand))
+
 (install-macro-cond)
 (install-macro-or)
 (install-macro-and)
 (install-macro-let)
+(install-macro-let*)
 
 (define (eval exp env)
   (cond
@@ -450,6 +472,12 @@
 (assert 'let-definition
         (run '((let ((a 1) (b 2))
                  (+ a b)))) 3)
+
+(assert 'let*-macro
+        (run '((let* ((x 3)
+                      (y (+ x 2))
+                      (z (+ x y 5)))
+                 (* x z)))) 39)
 
 (assert 'anonymous-conditional-lambda
         (run '(((if false

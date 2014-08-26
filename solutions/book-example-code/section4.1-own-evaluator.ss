@@ -362,9 +362,39 @@
 
 ;; procedure is a type-tagged list consists of three components:
 ;; - formals, body and the environment it is defined
+(define (scan-out-defines body)
+  (let ((definitions '()))
+    (define (make-let declares body)
+      (append (list 'let declares)
+              body))
+
+    (define (filter-out-definitions exps)
+      (cond
+       ((not (pair? exps)) exps)
+       ((null? exps) '())
+       ((definition? (car exps))
+        (begin
+          (set! definitions (cons (car exps) definitions))
+          (filter-out-definitions (cdr exps))))
+       (else
+        (cons (car exps) (filter-out-definitions (cdr exps))))))
+
+    (let* ((filtered-body (filter-out-definitions body)))
+      (if (null? definitions)
+          body
+          (let ((def-declares (map (lambda (def)
+                                     (list (def-variable def) '*unassigned*))
+                                   definitions))
+                (def-set-clauses (map (lambda (def)
+                                        (make-assignment (def-variable def)
+                                                         (def-body def)))
+                                      definitions)))
+            (make-let def-declares (append def-set-clauses filtered-body))
+            )))))
+
 (define (make-procedure formals body env)
   (attach-tag 'procedure
-              (list formals body env)))
+              (list formals (scan-out-defines body) env)))
 (define (procedure-formals proc)
   (car (contents proc)))
 (define (procedure-body proc)
@@ -424,9 +454,11 @@
   (if (env-root? env)
       (error "variable not found: LOOKUP-VARIABLE" symbol)
       (let ((content (search-symbol symbol env)))
-        (if (eq? content 'not-found)
-            (lookup-variable symbol (parent-env env))
-            content))))
+        (cond ((eq? content 'not-found)
+               (lookup-variable symbol (parent-env env)))
+              ((eq? content '*unassigned*)
+               (error "variable is not assigned: LOOKUP-VARIABLE" symbol))
+              (else content)))))
 
 (define add-variable set-symbol)
 

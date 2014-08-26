@@ -172,6 +172,11 @@
         (cons 'and *build-in-macro*))
   (put 'expand 'and expand))
 
+;; let syntax selectors
+(define declare-variable car)
+(define declare-exp cadr)
+(define make-declare list)
+
 (define (install-macro-let)
   (define (make-let declare-clauses body-clauses)
     (append (list 'let declare-clauses) body-clauses))
@@ -224,6 +229,30 @@
   (set! *build-in-macro*
         (cons 'let* *build-in-macro*))
   (put 'expand 'let* expand))
+
+(define (install-macro-letrec)
+  (define letrec-declare-clauses cadr)
+  (define letrec-body-clauses cddr)
+
+  (define (make-let declare-clauses body-clauses)
+    (append (list 'let declare-clauses) body-clauses))
+
+  (define (expand exp)
+    (let ((def-unassigns (map (lambda (declare)
+                                (make-declare
+                                 (declare-variable declare) (quote '*unassigned*)))
+                              (letrec-declare-clauses exp)))
+          (def-sets (map (lambda (declare)
+                           (make-assignment
+                            (declare-variable declare)
+                            (declare-exp declare)))
+                         (letrec-declare-clauses exp))))
+      (make-let def-unassigns
+                (append def-sets (letrec-body-clauses exp)))))
+
+  (set! *build-in-macro*
+        (cons 'letrec *build-in-macro*))
+  (put 'expand 'letrec expand))
 
 (define (install-macro-do)
   (define do-declares cadr)
@@ -286,6 +315,7 @@
 (install-macro-and)
 (install-macro-let)
 (install-macro-let*)
+(install-macro-letrec)
 (install-macro-do)
 
 (define (eval exp env)
@@ -602,6 +632,15 @@
                       (y (+ x 2))
                       (z (+ x y 5)))
                  (* x z)))) 39)
+
+(assert 'letrec-macro
+        (run '((letrec
+                   ((fact
+                     (lambda (n)
+                       (if (= n 1)
+                           1
+                           (* n (fact (- n 1)))))))
+                 (fact 10)))) 3628800)
 
 (assert 'do-iteration
         (run '((let ((x '(1 3 5 7 9)))

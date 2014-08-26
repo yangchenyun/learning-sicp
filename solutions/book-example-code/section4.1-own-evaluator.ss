@@ -1,5 +1,6 @@
 #lang racket
 (load "../lib/dispatch.ss")
+(load "../lib/assert.ss")
 
 ;; (define apply-with-underlying-system apply)
 (define (tagged-with? list symbol)
@@ -442,12 +443,6 @@
   (let ((global-env (make-new-env '())))
     (setup-env global-env)
     (eval-sequence prog global-env)))
-
-;; tests
-(define (assert name res expect)
-  (if (not (equal? res expect))
-      (error "Failed test:" name (list res expect))
-      'ok))
 
 ;; primitive expression
 (assert 'number-test

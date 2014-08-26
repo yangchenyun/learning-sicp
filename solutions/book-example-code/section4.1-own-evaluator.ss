@@ -173,13 +173,13 @@
   (put 'expand 'and expand))
 
 ;; let syntax selectors
+(define (make-let declare-clauses body-clauses)
+    (append (list 'let declare-clauses) body-clauses))
 (define declare-variable car)
 (define declare-exp cadr)
 (define make-declare list)
 
 (define (install-macro-let)
-  (define (make-let declare-clauses body-clauses)
-    (append (list 'let declare-clauses) body-clauses))
   (define (named-let? exp)
     (not (pair? (cadr exp))))
 
@@ -234,9 +234,6 @@
   (define letrec-declare-clauses cadr)
   (define letrec-body-clauses cddr)
 
-  (define (make-let declare-clauses body-clauses)
-    (append (list 'let declare-clauses) body-clauses))
-
   (define (expand exp)
     (let ((def-unassigns (map (lambda (declare)
                                 (make-declare
@@ -274,10 +271,6 @@
     (map (lambda (declare)
            (cons (car declare)
                  (list (cadr declare)))) (do-declares exp)))
-
-  (define (make-let declares body)
-    (append (list 'let declares)
-            body))
 
   (define (expand exp)
     (define iter-call
@@ -437,9 +430,6 @@
 ;; - formals, body and the environment it is defined
 (define (scan-out-defines body)
   (let ((definitions '()))
-    (define (make-let declares body)
-      (append (list 'let declares)
-              body))
 
     (define (filter-out-definitions exps)
       (cond
@@ -462,8 +452,7 @@
                                         (make-assignment (def-variable def)
                                                          (def-body def)))
                                       definitions)))
-            (make-let def-declares (append def-set-clauses filtered-body))
-            )))))
+            (make-let def-declares (append def-set-clauses filtered-body)))))))
 
 (define (make-procedure formals body env)
   (attach-tag 'procedure

@@ -426,6 +426,9 @@
 ;; choose to use the same truth representation in implementing and implemented
 ;; language
 (define (true? exp)
+  (not (eq? exp #f)))
+(define (false? exp)
+  (eq? exp #f))
 
 (define (apply-primitive procedure arguments)
   (apply-with-underlying-system (primitive-procedure procedure) arguments))

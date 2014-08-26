@@ -749,7 +749,8 @@
                 (make-frame-processer
                  unbound!-proc
                  end-each-frame-proc)
-                void))
+                (lambda ()
+                  (error "Unbound variable: UNBOUND!" var))))
 
 (test-exn "unbound variable in one environment"
           exn:fail?
@@ -779,3 +780,260 @@
 ;; *in the implemented* language to the underlying Scheme system. The operands
 ;; are simple lists '(lambda (x) x) and '(1 2 3), obviously this breaks the `map'
 ;; calls
+
+;; Exercise 4.15
+;; (define (run-forever) (run-forever))
+;; (define (try p)
+;;   (if (halts? p p)
+;;       (run-forever)
+;;       'halted))
+
+;; evaluate (try try)
+
+;; assume (halts? try try) returns true
+;; thus (try try) will evaluate to (run-forever) and this conflicts
+;; with (halts? try try)
+
+;; assume (halts? try try) return false, meaning (try try) runs forever
+;; however, according to the definition (try try) will evaluated to 'halted
+;; conflicts with assumption
+
+;; so `halts?' could not be implemented
+
+;; Exercise 4.16
+;; b.
+(define (scan-out-defines body)
+  (let ((definitions '()))
+    (define (make-let declares body)
+      (append (list 'let declares)
+              body))
+
+    (define (filter-out-definitions exps)
+      (cond
+       ((not (pair? exps)) exps)
+       ((null? exps) '())
+       ((definition? (car exps))
+        (begin
+          (set! definitions (cons (car exps) definitions))
+          (filter-out-definitions (cdr exps))))
+       (else
+        (cons (car exps) (filter-out-definitions (cdr exps))))))
+
+    (let* ((filtered-body (filter-out-definitions body)))
+      (if (null? definitions)
+          body
+          (let ((def-declares (map (lambda (def)
+                                     (list (def-variable def) '*unassigned*))
+                                   definitions))
+                (def-set-clauses (map (lambda (def)
+                                        (make-assignment (def-variable def)
+                                                         (def-body def)))
+                                      definitions)))
+            (make-let def-declares (append def-set-clauses filtered-body))
+            )))))
+
+;; c.
+;; use in `make-procedure' constructor. Because in the evaluator, procedure
+;; calls are more frequent then procedure definition (only once), so define
+;; the transform on constructor is more efficient
+
+;; Exercise 4.17
+
+;; The extra frame is created by the transformed `let' expression which contains
+;; an application of `lambda' expression.
+
+;; For a correct program, when <e3> is evaluated, both u and v are bound to the
+;; evaluation result of <e1> and <e2>
+
+;; One idea is to manipulate the direct environment created by the application
+;; which meas transformed the lambda body:
+;; (lambda ⟨vars⟩
+;;   (define u ⟨e1⟩)
+;;   (define v ⟨e2⟩)
+;;   ⟨e3⟩)
+
+;; to
+
+;; (lambda ⟨vars⟩
+;;   (define u '*unassigned*)
+;;   (define v '*unassigned*)
+;;   (set! u ⟨e1⟩)
+;;   (set! v ⟨e2⟩)
+;;   ⟨e3⟩)
+
+;; Exercise 4.18
+;; when the exercise scan-out is applied
+
+(define (solve f y0 dt)
+  (let ((y '*unassigned*)
+        (dy '*unassigned*))
+    (let ((_a (integral (delay dy) y0 dt))
+          (_b (stream-map f y)))
+      (set! y _a)
+      (set! dy _b))
+    y))
+
+;; this won't work because when resolving _b by evaluating (stream-map f y),
+;; y is still bound to '*unassigned* and will fail this evaluation
+
+;; when the text scan-out is applied
+
+(define (solve f y0 dt)
+  (let ((y '*unassigned*)
+        (dy '*unassigned*))
+    (set! y (integral (delay dy) y0 dt))
+    (set! dy (stream-map f y))
+    y))
+
+;; this works.
+;; When evaluating (set! y ...), y is bound to
+;; a procedure accepted a delayed argument for dy, dy is not required for this
+;; evaluation.
+;; As y is bound correctly to a integral stream, evaluating (set! dy ...) is
+;; successful and dy is bound to first element of (stream-map f y)
+;; from then on, the mutually recursive procedures would work successfully
+
+;; Exercise 4.19
+
+;; Ben's point of view is incorrect because the result depends on the order of
+;; definition. From his point of view, the following two program produces two
+;; different valuels
+(let ((a 1))
+  (define (f x)
+    (define b (+ a x))
+    (define a 5)
+    (+ a b))
+  (f 10))
+
+(let ((a 1))
+  (define (f x)
+    (define a 5)
+    (define b (+ a x))
+    (+ a b))
+  (f 10))
+
+;; Both Eva and Alyssa's view respects the underlying "simultaneous" internal
+;; definition. Alyssa's view is limited by the implemented mechanism and could
+;; be improved. Eva's view is the most consistent.
+
+;; a possible way to implement Eva's viewpoint is below:
+;; 1. construct a dependency graph for all the definitions within the body
+;; 2. order the set expressions by topological order of the dependency graph
+
+;; Exercise 4.20
+;; a.
+(define declare-variable car)
+(define declare-exp cadr)
+(define make-declare list)
+
+(define (install-macro-letrec)
+  (define letrec-declare-clauses cadr)
+  (define letrec-body-clauses cddr)
+
+  (define (make-let declare-clauses body-clauses)
+    (append (list 'let declare-clauses) body-clauses))
+
+  (define (expand exp)
+    (let ((def-unassigns (map (lambda (declare)
+                                (make-declare
+                                 (declare-variable declare) (quote '*unassigned*)))
+                              (letrec-declare-clauses exp)))
+          (def-sets (map (lambda (declare)
+                           (make-assignment
+                            (declare-variable declare)
+                            (declare-exp declare)))
+                         (letrec-declare-clauses exp))))
+      (make-let def-unassigns
+                (append def-sets (letrec-body-clauses exp)))))
+
+  (set! *build-in-macro*
+        (cons 'letrec *build-in-macro*))
+  (put 'expand 'letrec expand))
+
+;; b.
+
+;; the main difference between the `let' and `letrec' is at the environment
+;; where the actual `even?' and `odd?' procedures are created in.
+
+;; for the `letrec' expression, the `lambda' expressions are evaluated after
+;; `even?' and `odd?' are created in an separate environment, thus the procedures
+;; created are pointing to this environment containing `even?' and `odd?'
+
+;; On the other hand, when evaluating the `let' expression, the `lambda' expressions
+;; are evaluated in the outer environment where no `even?' and `odd?' are bound
+
+;; Exercise 4.21
+;; use the substitution model to evaluate the expression
+((lambda (n)
+   ((lambda (fact) (fact fact n))
+    (lambda (ft k)
+      (if (= k 1)
+          1
+          (* k (ft ft (- k 1)))))))
+ 10)
+
+((lambda (fact) (fact fact 10))
+ (lambda (ft k)
+   (if (= k 1)
+       1
+       (* k (ft ft (- k 1))))))
+
+((lambda (ft k)
+   (if (= k 1)
+       1
+       (* k (ft ft (- k 1)))))
+ (lambda (ft k)
+   (if (= k 1)
+       1
+       (* k (ft ft (- k 1)))))
+ 10)
+
+(* 10 ((lambda (ft k)
+         (if (= k 1)
+             1
+             (* k (ft ft (- k 1)))))
+       (lambda (ft k)
+         (if (= k 1)
+             1
+             (* k (ft ft (- k 1)))))
+       9))
+
+(* 10
+   (* 9
+      ((lambda (ft k)
+         (if (= k 1)
+             1
+             (* k (ft ft (- k 1)))))
+       (lambda (ft k)
+         (if (= k 1)
+             1
+             (* k (ft ft (- k 1)))))
+       8)))
+
+;; ...
+
+;; a.
+;; the lambda would recursively call itself with some accumulator
+;; the mimic for Fibonacci number
+((lambda (n)
+   ((lambda (fib) (fib fib n))
+    (lambda (ft k)
+      (cond ((= k 1) 1)
+            ((= k 0) 1)
+            (else
+             (+ (ft ft (- k 2))
+                (ft ft (- k 1))))))))
+ 1)
+
+;; b.
+(define (f x)
+  ((lambda (even? odd?)
+     (even? even? odd? x))
+   (lambda (ev? od? n)
+     (if (= n 0)
+         true
+         (od? ev? od? (- n 1))))
+   (lambda (ev? od? n)
+     (if (= n 0)
+         false
+         (ev? ev? od? (- n 1))))))

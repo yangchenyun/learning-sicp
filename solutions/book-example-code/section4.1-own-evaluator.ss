@@ -186,8 +186,8 @@
   (define (expand-normal-let exp)
     (define let-declare-clauses cadr)
     (define let-body-clauses cddr)
-    (let ((vars (map car (let-declare-clauses exp)))
-          (exps (map cadr (let-declare-clauses exp))))
+    (let ((vars (map declare-variable (let-declare-clauses exp)))
+          (exps (map declare-exp (let-declare-clauses exp))))
       (cons (make-lambda vars (seq->exp (let-body-clauses exp))) exps)))
 
   (define (expand-named-let exp)
@@ -198,7 +198,7 @@
     (make-let (let-declare-clauses exp)
               (append
                (list (make-definition (let-var exp)
-                                      (make-lambda (map car (let-declare-clauses exp))
+                                      (make-lambda (map declare-variable (let-declare-clauses exp))
                                                    (seq->exp (let-body-clauses exp)))))
                (let-body-clauses exp))))
 

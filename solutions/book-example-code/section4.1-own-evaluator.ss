@@ -501,13 +501,13 @@
 (define env-root? null?)
 
 (define *build-in-procedures*
-  '(+ - * / % remainder assoc cons car cdr null? = > < >= <= random))
+  '(+ - * / % remainder assoc cons car cdr null? = > < >= <= random display))
 (define *keyword*
   '(if quote define set! lambda begin))
 (define (setup-env env)
   (set-symbols *build-in-procedures*
                (map make-primitive-procedure
-                    (list + - * / modulo remainder assoc cons car cdr null? = > < >= <= random))
+                    (list + - * / modulo remainder assoc cons car cdr null? = > < >= <= random display))
                env)
   (set-symbol 'true #t env)
   (set-symbol 'false #f env)

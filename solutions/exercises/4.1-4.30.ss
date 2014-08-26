@@ -1037,3 +1037,118 @@
      (if (= n 0)
          false
          (ev? ev? od? (- n 1))))))
+
+;; Exercise 4.22
+;; add this to the analyser will do the work
+;; ((macro? exp)
+;;  (analyze (expand exp)))
+
+;; Exercise 4.23
+
+;; Alyssa's version
+(define (analyze-sequence exps)
+  (define (execute-sequence procs env)
+    (cond ((null? (cdr procs))
+           ((car procs) env))
+          (else ((car procs) env)
+                (execute-sequence
+                 (cdr procs) env))))
+  (let ((procs (map analyze exps)))
+    (if (null? procs)
+        (error "Empty sequence: ANALYZE")
+        (void))
+    (lambda (env)
+      (execute-sequence procs env))))
+
+;; consider the sequence with Alyssa's version
+(analyze-sequence '((+ 1 2)))
+
+;; with Alyssa's version
+(let ((procs (map analyze '((+ 1 2)))))
+  (if (null? procs)
+      (error "Empty sequence: ANALYZE")
+      (void))
+  (lambda (env)
+    (execute-sequence procs env)))
+
+(lambda (env)
+  (execute-sequence (list 'analyzed-+-1-2) env))
+
+;; when this is executed, the analyzed procedure will be called
+(lambda (env)
+  (analyzed-+-1-2 env))
+
+;; with text's version
+(let ((procs (map analyze '((+ 1 2)))))
+    (if (null? procs)
+        (error "Empty sequence: ANALYZE")
+        (adjoin-procs (car procs) (cdr procs))))
+
+(adjoin-procs 'analyzed-+-1-2 '())
+'analyzed-+-1-2
+
+;; consider a sequence with two expressions
+'((set! a 1)
+  (+ a 1))
+
+;; in Alyssa's version
+(lambda (env)
+  (execute-sequence (list 'analyzed-set!
+                          'analyzed-+-a-1) env))
+
+;; when executed, the application order is folded
+(lambda (env)
+  ('analyzed-set! env)
+  (execute-sequence (list 'analyzed-+-a-1) env))
+
+(lambda (env)
+  ('analyzed-set! env)
+  ('analyzed-+-a-1 env))
+
+;; in the text version
+(let ((procs (map analyze )))
+    (if (null? procs)
+        (error "Empty sequence: ANALYZE")
+        (adjoin-procs (car procs) (cdr procs))))
+
+(adjoin-procs 'analyzed-set! (list 'analyzed-+-a-1))
+(adjoin-procs (join-proc 'analyzed-set! 'analyzed-+-a-1)
+              '())
+(join-proc 'analyzed-set! 'analyzed-+-a-1)
+
+;; this produces the same result as Alyssa's procedure *during execution*
+(lambda (env)
+  ('analyzed-set! env)
+  ('analyzed-+-a-1 env))
+
+;; Exercise 4.24
+
+(define (time-eval-times prog n)
+  (define (iter proc n)
+    (if (= n 0)
+        'done
+        (begin
+          (proc)
+          (iter proc (- n 1)))))
+
+  (let ((global-env (make-global-env)))
+    (setup-env global-env)
+    ;; avoid the setup-env overhead
+    (time (iter (lambda ()
+             (eval-sequence prog global-env)) n))))
+
+(time-eval-times '((define (factorial n)
+                (if (= n 1)
+                    1
+                    (* n (factorial (- n 1)))))
+              (factorial 10))
+            10000)
+
+;; with the old evaluator
+;; cpu time: 721 real time: 722 gc time: 4
+
+;; with the new evaluator
+;; cpu time: 518 real time: 518 gc time: 6
+
+;; the syntax analysis occupies around 28% of the time to execute the program
+(* 1.0 (/ (- 722 518) 722))

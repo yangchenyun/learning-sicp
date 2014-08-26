@@ -318,74 +318,114 @@
 (install-macro-letrec)
 (install-macro-do)
 
-(define (eval exp env)
+(define (analyze-self-evaluating exp)
+  (lambda (env) exp))
+
+(define (analyze-variable exp)
+  (lambda (env)
+    (lookup-variable exp env)))
+
+(define (analyze-quote exp)
+  (let ((qv (text-of-quote exp)))
+    (lambda (env) qv)))
+
+(define (analyze-assignment exp)
+  (let ((var (assignment-variable exp))
+        (body-proc (analyze (assignment-body exp))))
+    (lambda (env)
+      (update-variable var (body-proc env) env)
+      'ok)))
+
+(define (analyze-definition exp)
+  (let ((var (def-variable exp))
+        (body-proc (analyze (def-body exp))))
+    (lambda (env)
+      (add-variable var (body-proc env) env)
+      'ok)))
+
+(define (analyze-if exp)
+  (let ((pproc (analyze (if-predicate exp)))
+        (cproc (analyze (if-consequence exp)))
+        (aproc (analyze (if-alternative exp))))
+    (lambda (env)
+      (if (true? (pproc env))
+          (cproc env)
+          (aproc env)))))
+
+(define (analyze-lambda exp)
+  (let ((formals (lambda-formals exp))
+        (body-proc (analyze-sequence (lambda-body exp))))
+    (lambda (env)
+      (make-procedure formals body-proc env))))
+
+(define (analyze-sequence exps)
+  (define (join-proc proc1 proc2)
+    (lambda (env)
+      (proc1 env) (proc2 env)))
+
+  (define (adjoin-procs first-proc rest-procs)
+    (if (null? rest-procs)
+        first-proc
+        (adjoin-procs (join-proc first-proc (car rest-procs))
+                      (cdr rest-procs))))
+
+  (let ((procs (map analyze exps)))
+    (if (null? procs)
+        (error "Empty sequence: ANALYZE")
+        (adjoin-procs (car procs) (cdr procs)))))
+
+(define (analyze-application exp)
+  (let ((pproc (analyze (operator exp)))
+        (aprocs (map analyze (operands exp))))
+    (lambda (env)
+      (execute-application (pproc env)
+                           (map (lambda (aproc)
+                                  (aproc env)) aprocs)))))
+
+(define (execute-application procedure arguments)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive procedure arguments))
+        ((compound-procedure? procedure)
+         ((procedure-body procedure)
+          (extend-env
+           (procedure-formals procedure)
+           arguments
+           (procedure-env procedure))))
+        (else
+         (error "Unknown procedure type: EXECUTE-APPLICATION" proc))))
+
+(define (analyze exp)
   (cond
    ((self-evaluating? exp)
-    exp)
+    (analyze-self-evaluating exp))
    ((variable? exp)
-    (lookup-variable exp env))
+    (analyze-variable exp))
    ((quote? exp)
-    (text-of-quote exp))
+    (analyze-quote exp))
    ((assignment? exp)
-    (eval-assignment exp env))
+    (analyze-assignment exp))
    ((definition? exp)
-    (eval-definition exp env))
+    (analyze-definition exp))
    ((if? exp)
-    (eval-if exp env))
+    (analyze-if exp))
    ;; expand macro before application
    ((macro? exp)
-    (eval (expand exp) env))
+    (analyze (expand exp)))
    ((lambda? exp)
-    (make-procedure
-     (lambda-formals exp)
-     (lambda-body exp)
-     env))
+    (analyze-lambda exp))
    ((begin? exp)
-    (eval-sequence (begin-actions exp) env))
+    (analyze-sequence (begin-actions exp)))
    ((application? exp)
-    (apply (eval (operator exp) env)
-           (map (lambda (operand)
-                  (eval operand env)) (operands exp))))
+    (analyze-application exp))
    (else
     (error "Unknown expression type: EVAL" exp))))
 
-;; special form evaluation
-(define (eval-assignment exp env)
-  (let ((var (assignment-variable exp))
-        (body (assignment-body exp)))
-    (update-variable var (eval body env) env)))
-
-(define (eval-definition exp env)
-  (let ((var (def-variable exp))
-        (body (def-body exp)))
-    (add-variable var (eval body env) env)))
-
-(define (eval-if exp env)
-  (if (true? (eval (if-predicate exp) env))
-      (eval (if-consequence exp) env)
-      (eval (if-alternative exp) env)))
+(define (eval exp env)
+  ((analyze exp) env))
 
 ;; choose to use the same truth representation in implementing and implemented
 ;; language
 (define (true? exp)
-  exp)
-
-(define (eval-sequence exps env)
-  (cond ((last-exp? exps)
-         (eval (first-exp exps) env))
-        (else
-         (eval (first-exp exps) env)
-         (eval-sequence (rest-exps exps) env))))
-
-(define (apply procedure arguments)
-  (cond ((primitive-procedure? procedure)
-         (apply-primitive procedure arguments))
-        ((compound-procedure? procedure)
-         (eval-sequence (procedure-body procedure)
-                        (extend-env
-                         (procedure-formals procedure)
-                         arguments
-                         (procedure-env procedure))))))
 
 (define (apply-primitive procedure arguments)
   (apply-with-underlying-system (primitive-procedure procedure) arguments))
@@ -513,7 +553,7 @@
 (define (run prog)
   (let ((global-env (make-new-env '())))
     (setup-env global-env)
-    (eval-sequence prog global-env)))
+    ((analyze-sequence prog) global-env)))
 
 ;; primitive expression
 (assert 'number-test

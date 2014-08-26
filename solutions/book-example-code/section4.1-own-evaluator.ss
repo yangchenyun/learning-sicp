@@ -137,16 +137,18 @@
 
 (define (install-macro-or)
   (define or-clauses cdr)
+
   (define (expand exp)
     (define (expand-clauses clauses)
       (if (null? clauses)
           'false
           (let ((first (car clauses))
                 (rest (cdr clauses)))
-            (make-if first
-                     first
-                     (expand-clauses rest)))))
-    (expand-clauses (or-clauses exp)))
+            (make-let (list (make-declare '_result first))
+                      (list (make-if '_result
+                                     '_result
+                                     (expand-clauses rest)))))))
+    (expand-clauses (cdr exp)))
 
   (set! *build-in-macro*
         (cons 'or *build-in-macro*))

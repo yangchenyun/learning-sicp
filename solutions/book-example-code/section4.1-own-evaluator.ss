@@ -521,7 +521,8 @@
                     (list + - * / modulo remainder assoc cons car cdr null? = > < >= <= random))
                env)
   (set-symbol 'true #t env)
-  (set-symbol 'false #f env))
+  (set-symbol 'false #f env)
+  env)
 
 (define (lookup-variable symbol env)
   (if (env-root? env)

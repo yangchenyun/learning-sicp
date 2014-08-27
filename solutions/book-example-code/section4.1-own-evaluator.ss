@@ -2,7 +2,7 @@
 (load "../lib/dispatch.ss")
 (load "../lib/assert.ss")
 
-;; (define apply-with-underlying-system apply)
+(define apply-with-underlying-system apply)
 (define (tagged-with? list symbol)
   (eq? symbol (car list)))
 
@@ -148,7 +148,7 @@
                       (list (make-if '_result
                                      '_result
                                      (expand-clauses rest)))))))
-    (expand-clauses (cdr exp)))
+    (expand-clauses (or-clauses exp)))
 
   (set! *build-in-macro*
         (cons 'or *build-in-macro*))

@@ -49,6 +49,16 @@
                       (stream-filter pred (stream-cdr s))))
         (else (stream-filter pred (stream-cdr s)))))
 
+(define (append-streams s1 s2)
+  (cond ((and (stream-null? s1)
+              (stream-null? s2)) the-empty-stream)
+        ((stream-null? s1) s2)
+        ((stream-null? s2) s1)
+        (else
+         (cons-stream
+          (stream-car s1)
+          (append-streams (stream-cdr s1) s2)))))
+
 (define (stream-for-each proc s)
   (if (stream-null? s)
       'done
@@ -69,3 +79,16 @@
       the-empty-stream
       (cons-stream
        low (stream-enumerate-interval (+ low 1) high))))
+
+(define (add-streams s1 s2) (stream-map + s1 s2))
+(define (mul-streams s1 s2) (stream-map * s1 s2))
+
+(define (scale-stream s factor)
+  (stream-map (lambda (x) (* x factor))
+              s))
+
+(define ones (cons-stream 1 ones))
+(define zeros (cons-stream 0 zeros))
+
+(define integers
+  (cons-stream 1 (add-streams ones integers)))

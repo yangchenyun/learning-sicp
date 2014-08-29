@@ -40,14 +40,14 @@
 ;; `show' will display the result being evaluated
 
 ;; when defining x `stream-map' is evaluated, and return a promise of a stream-map
-(cons
-  (apply show (stream-enumerate-interval 0 10)) ;; this display 0
-  (delay
-    (apply stream-map show (stream-cdr (stream-enumerate-interval 0 10)))))
+;; (cons
+;;   (apply show (stream-enumerate-interval 0 10)) ;; this display 0
+;;   (delay
+;;     (apply stream-map show (stream-cdr (stream-enumerate-interval 0 10)))))
 
-(cons 0
-  (delay
-    (apply stream-map show (stream-cdr (stream-enumerate-interval 0 10)))))
+;; (cons 0
+;;   (delay
+;;     (apply stream-map show (stream-cdr (stream-enumerate-interval 0 10)))))
 
 (stream-ref x 5)
 ;; would reduced to
@@ -203,3 +203,225 @@
 ;; 15, 167, 173, 180, ...
 ;; after filtering, the result would be
 ;; => 15 180 230 305
+
+;; Exercise 3.53
+(define s (cons-stream 1 (add-streams s s)))
+;; generate a 2^n sequence start from n = 0
+(stream-ref s 10)
+
+;; Exercise 3.54
+(define (mul-streams s1 s2)
+  (stream-map * s1 s2))
+
+;; multiple integers starting from 2
+(define factorials
+  (cons-stream 1 (mul-streams factorials (stream-cdr integers))))
+
+(stream-ref factorials 5)
+
+;; Exercise 3.55
+;; partial-sum(n) = partial-sum(n - 1) + stream(n)
+(define (partial-sums stream)
+  (cons-stream (stream-car stream)
+               (add-streams (partial-sums stream)
+                            (stream-cdr stream))))
+
+(stream-ref (partial-sums integers) 5)
+
+;; Exercise 3.56
+(define (merge s1 s2)
+  (cond ((stream-null? s1) s2)
+        ((stream-null? s2) s1)
+        (else
+         (let ((s1car (stream-car s1))
+               (s2car (stream-car s2)))
+           (cond
+            ((< s1car s2car)
+             (cons-stream
+              s1car
+              (merge (stream-cdr s1) s2)))
+            ((< s2car s1car)
+             (cons-stream
+              s2car
+              (merge s1 (stream-cdr s2))))
+            (else
+             (cons-stream
+              s1car ;; keep one value and advance in both streams
+              (merge (stream-cdr s1) (stream-cdr s2)))))))))
+
+(define S (cons-stream 1 (merge (scale-stream S 2)
+                                (merge
+                                 (scale-stream S 5)
+                                 (scale-stream S 3)))))
+
+(define (enumerate-int l h)
+  (if (> l h)
+      '()
+      (cons l (enumerate-int (+ l 1) h))))
+
+(map (lambda (n) (stream-ref S n)) (enumerate-int 0 20))
+
+;; Exercise 3.57
+;; when the `delay' is cached, further reference to previous elements in a
+;; stream is O(1)
+
+;; as fibs(n) is calculated from fibs(n - 1) and fibs(n - 2)
+;; so the steps to computer fibs-steps(n) is 1 + fibs-steps(n - 1)
+;; fibs-steps(n) = (n - 2) + fibs-steps(2) = (n - 1)
+
+;; when `delay' is not cached, further reference required calculation as well
+;; for the nth fibs, there are (n - 2) addition required to build the stream
+;; fibs-steps(n) = (n - 1) + fibs-steps(n - 1) + fibs-steps(n - 2), n >= 3
+
+;; now, verify the above examination:
+
+(define add-with-trace
+  (let ((count 0))
+    (lambda (m . rest)
+      (cond ((eq? m 'count) count)
+            ((eq? m 'reset) (set! count 0))
+            (else
+             (set! count (+ 1 count))
+             (apply + (cons m rest)))))))
+
+(define (add-streams s1 s2) (stream-map add-with-trace s1 s2))
+
+(define fibs
+  (cons-stream
+   0 (cons-stream
+      1 (add-streams
+         (stream-cdr fibs) fibs))))
+
+;; when `delay' is cached
+(stream-ref fibs 9)
+(add-with-trace 'count) ;; => 8, correct
+
+;; when `delay' is not cached
+(define (fibs-steps n)
+  (cond ((= n 0) 0)
+        ((= n 1) 0)
+        (else
+         (+ (- n 1)
+            (fibs-steps (- n 1))
+            (fibs-steps (- n 2))))))
+(equal?
+ (map
+  (lambda (n)
+    (add-with-trace 'reset)
+    (stream-ref fibs n)
+    (add-with-trace 'count))
+  (enumerate-int 0 10))
+
+ (map fibs-steps (enumerate-int 0 10)))
+
+;; Exercise 3.58
+(define (expand num den radix)
+  (cons-stream
+   (quotient (* num radix) den)
+   (expand (remainder (* num radix) den)
+           den
+           radix)))
+
+;; (expand 1 7 10)
+;; 1, (expand 3 7 10)
+;; 1, 4, (expand 2 7 10)
+;; 1, 4, 2, (expand 6 7 10),
+;; 1, 4, 2, 8, (expand 4 7 10)
+;; 1, 4, 2, 8, 5, (epxand 5 7 10)
+;; 1, 4, 2, 8, 5, 7, (expand 1 7 10)
+;; ....
+
+(map (lambda (x) (stream-ref (expand 1 7 10) x))
+     (enumerate-int 0 10))
+
+;; (expand 3 8 10)
+;; 3, (expand 6 8 10)
+;; 3, 7, (expand 4 8 10)
+;; 3, 7, 5, (expand 0 8 10)
+;; 3, 7, 5, 0, 0 ....
+
+;; Exercise 3.59
+;; a.
+(define (integrate series)
+  (stream-map / series integers))
+
+(display-stream (integrate (stream-enumerate-interval 1 10)))
+
+;; b.
+(define exp-series
+  (cons-stream
+   1 (integrate-series exp-series)))
+
+(define (neg-stream s)
+  (stream-map - s))
+
+(define sine-series
+  (cons-stream 0 (integrate cosine-series)))
+
+(define cosine-series
+  (cons-stream 1 (neg-stream (integrate sine-series))))
+
+;; Exercise 3.60
+(define add-series add-streams)
+
+;;   a0, a1, ... an
+;; * b0, b1, ... bn
+;; = a0 * (b0 .. bn) + (a1 ... an) * (b0 ... bn)
+;; = a0 * b0 + a0 * (b1 ... bn) + (a1 ... an) * (b0 ... bn)
+
+(define (mul-series s1 s2)
+  (cons-stream (* (stream-car s1)
+                  (stream-car s2))
+               (add-series
+                (scale-stream (stream-cdr s2)
+                              (stream-car s1))
+                (mul-series (stream-cdr s1)
+                            s2))))
+
+;; why this doesn't work, it seems the mul-series cannot print
+;; elements longer than its input
+;; (display-stream (mul-series (stream-enumerate-interval 1 3)
+;;                             (stream-enumerate-interval 1 3)))
+
+(define formula
+  (add-streams
+   (mul-series sine-series sine-series)
+   (mul-series cosine-series cosine-series)))
+
+(map (lambda (n) (stream-ref formula n))
+     '(0 1 2 3 4 5))
+
+;; Exercise 3.61
+(define (invert-unit-series s)
+  (cons-stream
+   1 (neg-stream (mul-series (stream-cdr s)
+                             (invert-unit-series s)))))
+
+(define s (stream-enumerate-interval 1 3))
+(map (lambda (n) (stream-ref (mul-series s (invert-unit-series s)) n))
+     '(0 1 2 3 4 5))
+
+;; Exercise 3.62
+(define (div-series ns ds)
+  (let ((dscar (stream-car ds)))
+    (if (zero? dscar)
+        (error "denominator has zero constant" (stream-car ds))
+        (mul-series ns
+                    (scale-stream ;; recover the stream scale
+                     (invert-unit-series
+                      (scale-stream ds (/ 1 dscar))) ;; invert-unit requires unit constant
+                     dscar)))))
+
+(define tangent-series
+  (div-series sine-series cosine-series))
+
+;; tan^2 + 1 = 1 / cos^2
+(define tan-square
+  (mul-series tangent-series tangent-series))
+
+;; tests
+(map (lambda (n) (stream-ref
+                  (add-series tan-square
+                              (neg-stream (invert-unit-series (mul-series cosine-series cosine-series)))
+                              ) n))
+     '(0 1 2 3 4 5 6 7 8 9 10))

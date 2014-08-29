@@ -1,6 +1,7 @@
 #lang racket
 (require r5rs)
 (load "../lib/stream.ss")
+(load "../lib/arithmetic.ss")
 
 ;; Exercise 3.50
 (define (stream-map proc . argstreams)
@@ -425,3 +426,74 @@
                               (neg-stream (invert-unit-series (mul-series cosine-series cosine-series)))
                               ) n))
      '(0 1 2 3 4 5 6 7 8 9 10))
+
+;; Exercise 3.63
+;; draw the environment diagram will help understand this issue
+(define (sqrt-improve guess x)
+  (average guess (/ guess x)))
+
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream
+     1.0
+     (stream-map (lambda (guess)
+                   (sqrt-improve guess x)) guesses)))
+  guesses)
+
+;; for the textbook's version, a stream named`guesses' returned whose
+;; delayed part will be cached.
+(stream-ref (sqrt-stream 2) 10)
+;; because a local variable `guesses' is present where the whole stream is saved
+;; when fetch the 10th element, the 9th element will have already been cached
+;; so only one `sqrt-iter' call is required for each step and
+;; the time complexity is O(n)
+
+;; with Louis's version
+(define (sqrt-stream x)
+  (cons-stream
+   1.0
+   (stream-map (lambda (guess)
+                 (sqrt-improve guess x))
+               (sqrt-stream x))))
+
+;; as in the textbook's version the computation of nth element depends on
+;; the (n-1)th element. Howeverthe stream (sqrt-stream x) is not saved.
+;; in the environment, `sqrt-stream' is still a function and (sqrt-stream x)
+;; is just an intermediate procedure application which return a stream to be used
+
+;; so each step will involved n `sqrt-improve' call. So the time complexity is O(n^2)
+
+;; if the cache implementation is not used, the `guesses' won't remember its previous
+;; value then the textbook's version is O(n^2) as well.
+
+;; Exercise 3.64
+(define (stream-limit s tolerance)
+  (let ((first (stream-ref s 0))
+        (second (stream-ref s 1)))
+    (if (< (abs (- first second)) tolerance)
+        second
+        (stream-limit (stream-cdr s) tolerance))))
+
+(define (sqrt x tolerence)
+  (stream-limit (sqrt-stream x) tolerence))
+
+(sqrt 2 0.00001)
+
+;; Exercise 3.65
+(define natrual-log-two-stream
+  (partial-sums
+   (mul-streams alts (stream-map / ones integers))))
+
+;; ln2=0.69314718055994530941...
+(display-stream-first natrual-log-two-stream 20)
+;; converges slowly within range [0.67, 0.72]
+
+;; use an accelerator, converges at 8th with 0.6931471805604039
+(display-stream-first
+ (accelerated-sequence euler-transform natrual-log-two-stream) 10)
+
+(define (natrual-log-two tolerance)
+  (stream-limit
+   (accelerated-sequence euler-transform natrual-log-two-stream) tolerance))
+
+(natrual-log-two 0.000000001)

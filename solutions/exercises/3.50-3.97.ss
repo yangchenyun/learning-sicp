@@ -400,7 +400,7 @@
 
 (define s (stream-enumerate-interval 1 3))
 (map (lambda (n) (stream-ref (mul-series s (invert-unit-series s)) n))
-     '(0 1 2 3 4 5))
+     '(0 1 2))
 
 ;; Exercise 3.62
 (define (div-series ns ds)
@@ -482,7 +482,7 @@
 ;; Exercise 3.65
 (define natrual-log-two-stream
   (partial-sums
-   (mul-streams alts (stream-map / ones integers))))
+   (mul-streams alts (stream-map / float-ones integers))))
 
 ;; ln2=0.69314718055994530941...
 (display-stream-first natrual-log-two-stream 20)
@@ -497,3 +497,219 @@
    (accelerated-sequence euler-transform natrual-log-two-stream) tolerance))
 
 (natrual-log-two 0.000000001)
+
+(display-stream-first (pairs integers integers) 50)
+
+;; Exercise 3.66
+(define (stream-count-until pair stream)
+  (define (iter count s)
+    (if (equal? pair (stream-car s))
+        count
+        (iter (+ 1 count) (stream-cdr s))))
+  (iter 0 stream))
+
+;; pairs are placed by the order of sum of two integers in a pair
+
+;; except (1, 1), (1, n) pair and the rest are interleaving
+;; there would be 2 * (n - 1) - 1 pair preceding pair (1, n)
+
+;; (1, 100) has 197 preceding pairs
+
+(= 197 (stream-count-until '(1 100) (pairs integers integers)))
+
+;; now let solve a more general case for (m, n)
+
+;; when m = n, the pairs preceding (m, n) is:
+;; m = 1, 1
+;; m = 2, 2
+;; m = 3, C(m) = 2 * C(m - 1) + 2
+;; C(m) = 2^n - 2
+
+;; when n < m, let consider the simple case for (2, n)
+;; first of all, considering only pair starting with 2 and larger integer
+;; would be 2 * (n - 1) - 3 pairs excluding (2, n) itself according to the above conclusion
+;; calculate all pairs starting with integer 1 now.
+;; as the interleaving pick pairs from the (1, *) and rest, from the second pair
+;; there would be (2n - 5) + 1 pairs interleaved with all the preceding pairs above
+;; at last, there would be one pair starting from 1 preceding (2, n) itself
+;; so the total pairs preceding (2, n) is (2n - 5) + (2n - 5) + 1 + 1 = 4n - 8 (n > 2)
+
+;; accordingly, (3, n) is
+;; pairs start from 3 or larger int: 2 * ((n - 2) - 1) - 1 = 2n - 7
+;; pairs start from 2 = 2n - 7 + 1 + 1 = 2n - 5
+;; pairs start from 1 = (4n - 12) + 1 + 1 = 4n - 10
+;; so the total is 8n - 22 (n > 3)
+
+;; now we found the pattern, let C(m, n) be the count of pairs preceding (m, n)
+;; let Cx(m, n) be the count of pairs starting from int larger than x preceding (m, n)
+;; Cm(m, n) = 2 * (n - m) - 1 = 2n - (2m + 1)
+;; Cm-1(m, n) = C(m, n) + Cm-1(m, n) = 4n - 4m
+;; Cm-2(m, n) = C(m - 1, n) + Cm-2(m, n)= 8n - 8m + 2
+;; ...
+;; C1(m, n) = 2 * C2(m, n) + 2
+
+;; C1(m, n) = 2^m * (n - m) + 2^(m - 1) - 2
+
+;; (99, 100) will be C1(99, 100) = 2^99 + 2^98 - 2
+;; (100, 100) will be 2^100 - 2
+
+;; because (99, 100) is too large to test, let's test out for (9, 10) and (10, 10)
+;; (9, 10) will have 2^9 + 2^8 - 2 pairs, 766 pairs
+;; (10, 10) will have 2^10 - 2, 1022 pairs
+
+(= 766 (stream-count-until '(9 10) (pairs integers integers)))
+(= 1022 (stream-count-until '(10 10) (pairs integers integers)))
+
+;; Exercise 3.67
+(define (full-pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (interleave
+     (stream-map (lambda (x) (list (stream-car s) x)) ;; first row
+                 (stream-cdr t))
+     (stream-map (lambda (x) (list x (stream-car t))) ;; first column
+                 (stream-cdr s)))
+    (full-pairs (stream-cdr s) (stream-cdr t)))))
+
+(display-stream-first (full-pairs integers integers) 20)
+
+;; Exercise 3.68
+(define (louis-pairs s t)
+  (interleave
+   (stream-map (lambda (x) (list (stream-car s) x))
+               t)
+   (louis-pairs (stream-cdr s) ;; a direct recursive
+                (stream-cdr t))))
+
+;; it doesn't work, will result in an infinite loop
+;; when evaluating louis-pairs, it will recursively call
+;; `louis-pairs' when evaluating its body and result in
+;; an infinite loop
+
+;; for the textbook's version, the recursive process call
+;; is delayed through `cons-stream'
+
+;; Exercise 3.69
+(define (triples s t u)
+  (cons-stream
+   (list (stream-car s)
+         (stream-car t)
+         (stream-car u))
+   (interleave
+    (stream-map (lambda (p) (list (stream-car s) (car p) (cadr p)))
+                (stream-cdr (pairs t u))) ;; all pairs i <= j, except (1, 1)
+    (triples (stream-cdr s)
+             (stream-cdr t)
+             (stream-cdr u)))))
+
+(display-stream-first (triples integers integers integers) 20)
+
+(define pythagorean-triples
+  (stream-filter (lambda (triple)
+                   (let ((a (car triple))
+                         (b (cadr triple))
+                         (c (caddr triple)))
+                     (= (square c) (+ (square a) (square b)))))
+                 (triples integers integers integers)))
+
+(display-stream-first pythagorean-triples 4)
+
+;; Exercise 3.70
+(define (merge-weighted weight s1 s2)
+  (cond ((stream-null? s1) s2)
+        ((stream-null? s2) s1)
+        (else
+         (let ((s1car (stream-car s1))
+               (s2car (stream-car s2)))
+           (cond
+            ((< (weight s1car) (weight s2car) 0)
+             (cons-stream
+              s1car
+              (merge-weighted weight (stream-cdr s1) s2)))
+            ((> (weight s1car) (weight s2car) 0)
+             (cons-stream
+              s2car
+              (merge-weighted weight s1 (stream-cdr s2))))
+            (else
+             (cons-stream
+              s1car ;; pick the one appears first
+              (merge-weighted weight (stream-cdr s1) s2))))))))
+
+(define (weighted-pairs weight s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (merge-weighted weight
+                   (stream-map (lambda (x) (list (stream-car s) x))
+                               (stream-cdr t))
+                   (weighted-pairs weight (stream-cdr s) (stream-cdr t)))))
+
+;; a.
+(define (sum-weight p)
+  (+ (car p) (cadr p)))
+
+(display-stream-first (weighted-pairs sum-weight integers integers) 20)
+
+;; b.
+(define (divisible? x y) (= 0 (remainder x y)))
+(display-stream-first (weighted-pairs
+                       (lambda (p) (+ (* 2 (car p))
+                                      (* 3 (cadr p))
+                                      (* 5 (car p) (cadr p)))) ;; 2i + 3j + 5ij
+                       (stream-filter (lambda (int)
+                                        (not (or (divisible? int 2)
+                                                 (divisible? int 3)
+                                                 (divisible? int 5)
+                                                 ))) integers)
+                       (stream-filter (lambda (int)
+                                        (not (or (divisible? int 2)
+                                                 (divisible? int 3)
+                                                 (divisible? int 5)
+                                                 ))) integers)) 20)
+
+;; Exercise 3.71
+(define (cube-sum-weight p)
+  (+ (cube (car p))
+     (cube (cadr p))))
+
+(define cube-sum-weighted-pairs
+  (weighted-pairs cube-sum-weight integers integers))
+
+(define (find-consecutive-equal-weighted weight stream)
+  (let ((first (stream-ref stream 0))
+        (second (stream-ref stream 1)))
+    (if (= (weight first) (weight second))
+        (cons-stream (list (weight first) first second)
+                     (find-consecutive-equal-weighted weight
+                                                      (stream-cdr
+                                                       (stream-cdr stream))))
+        (find-consecutive-equal-weighted weight (stream-cdr stream)))))
+
+(define ramanujan-numbers
+  (find-consecutive-equal-weighted cube-sum-weight cube-sum-weighted-pairs))
+
+(display-stream-first ramanujan-numbers 10)
+
+;; Exercise 3.72
+
+(define (find-consecutive-three-equal-weighted weight stream)
+  (let ((first (stream-ref stream 0))
+        (second (stream-ref stream 1))
+        (third (stream-ref stream 2)))
+    (if (= (weight first) (weight second) (weight third))
+        (cons-stream (list (weight first) first second third)
+                     (find-consecutive-three-equal-weighted
+                      weight
+                      (stream-cdr
+                       (stream-cdr
+                        (stream-cdr stream)))))
+        (find-consecutive-three-equal-weighted weight (stream-cdr stream)))))
+
+(define (square-sum p)
+  (+ (square (car p))
+     (square (cadr p))))
+
+(define square-sum-weighted-pairs
+  (weighted-pairs square-sum integers integers))
+
+(display-stream-first (find-consecutive-three-equal-weighted square-sum square-sum-weighted-pairs) 10)

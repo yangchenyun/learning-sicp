@@ -713,3 +713,85 @@
   (weighted-pairs square-sum integers integers))
 
 (display-stream-first (find-consecutive-three-equal-weighted square-sum square-sum-weighted-pairs) 10)
+
+;; Exercise 3.73
+(define (RC R C dt)
+  (lambda (i v0)
+    (add-streams
+     (scale-stream i R)
+     (integral (scale-stream i (/ 1 C))
+               v0 dt))))
+
+(define RC1 (RC 5 1 0.5))
+
+;; Exercise 3.74
+
+(define (list->stream list)
+  (if (null? list)
+      the-empty-stream
+      (cons-stream (car list)
+                   (list->stream (cdr list)))))
+
+(define sense-data
+  (list->stream '(1 2 1.5 1 0.5 -0.1 -2 -3 -2 -0.5 0.2 3 4)))
+
+(define (sign-change-detector next curr)
+  (if (>= (* next curr) 0)
+      0 ;; not crossing the zero
+      (if (> next curr) 1 -1)))
+
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector
+    (stream-car input-stream)
+    last-value)
+   (make-zero-crossings
+    (stream-cdr input-stream)
+    (stream-car input-stream))))
+
+(define zero-crossings
+  (make-zero-crossings sense-data 0))
+
+(display-stream-first zero-crossings 12)
+
+;; the generalized solution
+(define zero-crossings
+  (stream-map sign-change-detector
+              sense-data
+              (cons-stream 0 sense-data)))
+
+;; Exercise 3.75
+;; Louis's version
+(define (make-zero-crossings input-stream last-value)
+  (let ((avpt (average (stream-car input-stream)
+                       last-value)))
+    (cons-stream
+     (sign-change-detector avpt last-value)
+     (make-zero-crossings
+      (stream-cdr input-stream) avpt)))) ;; the bug line
+
+;; according to Alyssa, the constructed stream is calculated by
+;; the average value of sense-data and its previous value
+;; However, in Louis's implementation, the average is calculated by
+;; the current value and the 'calculated average' of the previous value
+
+;; The correct implementation
+(define (make-zero-crossings input-stream last-avpt last-value)
+  (let ((avpt (average (stream-car input-stream)
+                       last-value)))
+    (cons-stream
+     (sign-change-detector avpt last-avpt)
+     (make-zero-crossings
+      (stream-cdr input-stream) avpt (stream-car input-stream)))))
+
+;; Exercise 3.76
+(define (smooth s)
+  (stream-map average
+              s
+              (cons-stream (stream-car s) s)))
+
+(define smoothed-zero-crossings
+  (let ((smoothed-sense-data (smooth sense-data)))
+    (stream-map sign-change-detector
+                smoothed-sense-data
+                (cons-stream 0 smoothed-sense-data))))

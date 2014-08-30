@@ -795,3 +795,50 @@
     (stream-map sign-change-detector
                 smoothed-sense-data
                 (cons-stream 0 smoothed-sense-data))))
+
+;; Exercise 3.77
+(define (integral delayed-integrand initial-value dt)
+  (cons-stream
+   initial-value
+   (let ((integrand (force delayed-integrand)))
+     (if (stream-null? integrand)
+         the-empty-stream
+         (integral
+          (stream-cdr integrand)
+          (+ (* dt (stream-car integrand))
+             initial-value)
+          dt)))))
+
+;; Exercise 3.78
+(define (solve-2nd a b y0 dy0 dt)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (integral (delay ddy) dy0 dt))
+  (define ddy (add-streams
+               (scale-stream dy a)
+               (scale-stream y b)))
+  y)
+
+;; Exercise 3.79
+(define (solve-2nd-general f y0 dy0 dt)
+  (define y (integral (delayed dy) y0 dt))
+  (define dy (integral (delayed ddy) dy0 dt))
+  (define ddy (stream-map f dy y))
+  y)
+
+;; Exercise 3.80
+;; dvc/dt = iC/C = - iL/C
+;; diL/dt = vL/L = (vC - vR) / L = (vC - iR * R) = (vC - iL * R)
+
+(define (RLC R L C dt)
+  (define (rcl vC0 iL0)
+    (define iL (integral (delay diL) iL0 dt))
+    (define diL (add-streams
+                 (scale-stream iL (- (/ R L)))
+                 (scale-stream vC (/ 1 L))))
+    (define vC (integral (delay dvC) vC0 dt))
+    (define dvC (scale-stream iL (- (/ 1 C))))
+    (stream-map list il vC))
+  rcl)
+
+(define RLC1 (RLC 1 1 0.2 0.1))
+(RLC1 0 10)

@@ -127,3 +127,44 @@
   (stream-map stream-car (make-tableau transform s)))
 
 (display-stream-first (accelerated-sequence euler-transform pi-stream) 8)
+
+;; infinite stream pairs
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (append-streams
+    (stream-map (lambda (x) (list (stream-car s) x))
+                (stream-cdr t))
+    (pairs (stream-cdr s)
+           (stream-cdr t)))))
+
+;; the first `stream-map' stream is infinite
+(display-stream-first
+ (pairs integers integers) 10)
+
+(define (interleave s1 s2)
+  (if (null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (interleave s2 (stream-cdr s1)))))
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x))
+                (stream-cdr t))
+    (pairs (stream-cdr s)
+           (stream-cdr t)))))
+
+(display-stream-first
+ (pairs integers integers) 10)
+
+;; signal processing
+(define (integral input initial-value dt)
+  (define int
+    (cons-stream
+     initial-value
+     (add-streams (scale-stream input dt)
+                  int)))
+  int)

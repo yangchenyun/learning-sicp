@@ -168,3 +168,51 @@
      (add-streams (scale-stream input dt)
                   int)))
   int)
+
+;; delayed evaluation
+
+(define (integral delayed-integrand initial-value dt)
+  (define int
+    (cons-stream
+     initial-value
+     (let ((integrand (force delayed-input)))
+       (add-streams (scale-stream integrand dt)
+                    int))))
+  int)
+
+(define (solve f y0 dt)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (stream-map f y))
+  y)
+
+;; failed in Racket evaluation model
+;; (solve identity 1 0.001)
+
+;; modular in streams
+(define (rand-update i)
+  (let ((n 65537)
+        (b 1299689)
+        (g 75))
+    (remainder (* g i) n)))
+(define random-init 10)
+
+(define random-stream
+  (cons-stream random-init
+               (stream-map rand-update random-stream)))
+
+(define cesaro-stream
+  (stream-map (lambda (a b)
+                (if (= (gcd a b) 1) 1 0)) (stream-cdr random-stream) random-stream))
+
+(display-stream-first cesaro-stream 10)
+
+;; calculate the fraction of the trials where result is true in the cesaro-seq
+(define (monte-carlo stream)
+  (stream-map / (partial-sums stream) (partial-sums float-ones)))
+
+(define estimate-pi
+  (stream-map
+   (lambda (p) (if (= p 0) 0 (sqrt (/ 6 p))))
+   (monte-carlo cesaro-stream)))
+
+(stream-ref estimate-pi 1000)

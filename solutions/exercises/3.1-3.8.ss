@@ -118,7 +118,6 @@
                             (+ true-count test-result)))))
   (monte-carlo-iter trials 0))
 
-(require srfi/27)
 (define (random-in-range low high)
   (let ((range (- high low)))
     (+ low (* range (random-real)))))
@@ -139,13 +138,6 @@
 (estimate-integral 10000 unit-circle-predicate -1.0 1.0 -1.0 1.0)
 
 ;; Exercise 3.6
-(define (rand-update i)
-  (let ((n 65537)
-        (b 1299689)
-        (g 75))
-    (remainder (* g i) n)))
-
-(define random-init 10)
 (define rand
   (let ((seed random-init))
     ;; a fixed method with a clojure variable

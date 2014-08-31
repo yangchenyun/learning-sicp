@@ -842,3 +842,52 @@
 
 (define RLC1 (RLC 1 1 0.2 0.1))
 (RLC1 0 10)
+
+;; Exercise 3.81
+;; comparing with the original random-stream, they share the same property:
+;; the current value is derived from the previous value
+;; however, the update depends on the commands stream
+;; so just wraps the `rand-update' with a procedure to take the command into
+;; consideration and keep the original stream processing logic
+
+(define (random-generator-stream commands)
+  (define (update-on-command com number)
+    (cond ((eq? com 'r) random-init)
+          ((eq? com 'g) (rand-update number))
+          (else (error "unknown command: RANDOM-GENERATOR-STREAM"))))
+
+  (define random-stream
+    (cons-stream random-init
+                 (stream-map update-on-command commands random-stream)))
+  random-stream)
+
+(display-stream-first
+ (random-generator-stream (list->stream
+                           '(g g g g g g r g g g g g g))) 10)
+
+
+;; Exercise 3.82
+;; from textbook
+(define (monte-carlo stream)
+  (stream-map / (partial-sums stream) (partial-sums float-ones)))
+
+(define (random-range-streams low high)
+  (cons-stream
+   (+ low (* (- high low) (random-real)))
+   (random-range-streams low high)))
+
+(define (region-test-streams p x-streams y-streams)
+  (stream-map p x-streams y-streams))
+
+(define (unit-circle-predicate x y)
+  (if (< (+ (square y) (square x)) 1) 1 0))
+
+(define (estimate-integral p x1 x2 y1 y2)
+  (let ((x-streams (random-range-streams x1 x2))
+        (y-streams (random-range-streams y1 y2))
+        (area (abs (* (- x2 x1) (- y2 y1)))))
+    (scale-stream
+     (monte-carlo (region-test-streams p x-streams y-streams))
+     area)))
+
+(stream-ref (estimate-integral unit-circle-predicate -1.0 1.0 -1.0 1.0) 1000)

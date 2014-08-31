@@ -139,3 +139,17 @@
 
 (define (accelerated-sequence transform s)
   (stream-map stream-car (make-tableau transform s)))
+
+(define (integral input initial-value dt)
+  (define int
+    (cons-stream
+     initial-value
+     (add-streams (scale-stream input dt)
+                  int)))
+  int)
+
+(define (list->stream list)
+  (if (null? list)
+      the-empty-stream
+      (cons-stream (car list)
+                   (list->stream (cdr list)))))

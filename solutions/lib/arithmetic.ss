@@ -35,3 +35,11 @@
 
 (define (prime? n)
   (fast-prime? n 3))
+
+(require srfi/27)
+(define (rand-update i)
+  (let ((n 65537)
+        (b 1299689)
+        (g 75))
+    (remainder (* g i) n)))
+(define random-init 10)

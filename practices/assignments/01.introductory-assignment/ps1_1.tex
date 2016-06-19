@@ -1,11 +1,11 @@
 % Document Type: LaTeX
-\input ../6001mac
- 
+\input{../6001mac}
+
 \def\fbox#1{%
  \vtop{\vbox{\hrule%
     \hbox{\vrule\kern3pt%
 \vtop{\vbox{\kern3pt#1}\kern3pt}%
-\kern3pt\vrule}}% 
+\kern3pt\vrule}}%
 \hrule}}
 
 \begin{document}
@@ -15,7 +15,7 @@
 \medskip
 
 \begin{flushleft}
-Reading: 
+Reading:
 \begin{itemize}
 
 \item Text (SICP 2nd Edition by Abelson \& Sussman): section 1.1
@@ -83,8 +83,8 @@ square
 \section{2. Getting started with the Scheme Interpreter}
 
 In the Scheme interpreter, you will use a text-editing system called Edwin,
-which is an editor closely resembling the widely used editor Emacs.  Even 
-if you are already familiar with Emacs, you should take some time {\it now} 
+which is an editor closely resembling the widely used editor Emacs.  Even
+if you are already familiar with Emacs, you should take some time {\it now}
 to run the Emacs/Edwin tutorial.  This can be invoked by typing {\tt C-h}
 followed by {\tt t}.  You will probably get bored before you finish the
 tutorial. (It's too long, anyway.)  But at least skim all the topics so
@@ -126,14 +126,14 @@ look deceptively similar but have different values. Properly indented,
 however, the difference is obvious.
 
 \beginlisp
-(* 5 
-   (- 2 
-      (/ 4 2) 
+(* 5
+   (- 2
+      (/ 4 2)
       (/ 8 3)))
 \null
-(* 5 
-   (- 2 
-      (/ 4 2)) 
+(* 5
+   (- 2
+      (/ 4 2))
    (/ 8 3))
 \endlisp
 
@@ -250,7 +250,7 @@ should signal an error, with the message:
 \begin{verbatim}
 ;The procedure #[compound-procedure P2] has been called with 1 argument
 ;it requires exactly 2 arguments.
-;Type D to debug error, Q to quit back to REP loop: 
+;Type D to debug error, Q to quit back to REP loop:
 \end{verbatim}
 }
 
@@ -339,7 +339,7 @@ the top buffer, select the line
 \end{verbatim}
 }
 
-The bottom buffer should now look like this: 
+The bottom buffer should now look like this:
 {\small
 \begin{verbatim}
                          SUBPROBLEM LEVEL: 2
@@ -491,12 +491,12 @@ automatically be re-indented as
 Find the description of this command.  What is the command?  Where did
 you find it?
 
-\paragraph{Exercise 9: Running Shell Commands} 
+\paragraph{Exercise 9: Running Shell Commands}
 
-If you run the Scheme interpreter within a *nix environment, the Edwin command 
-{\tt M-x shell} will create a shell buffer, which you can use to run 
+If you run the Scheme interpreter within a *nix environment, the Edwin command
+{\tt M-x shell} will create a shell buffer, which you can use to run
 various *nix programs.  Some of the more interesting ones are {\tt ls}, {\tt
-date}, and {\tt echo}.  
+date}, and {\tt echo}.
 For example, typing
 
 \beginlisp
@@ -504,8 +504,8 @@ date
 \endlisp
 
 \noindent
-will show you the current date and time (e.g. {\tt Tue Jul  2 15:39:45 EDT 
-1996}). See if you can figure out what the other commands do, and copy your 
+will show you the current date and time (e.g. {\tt Tue Jul  2 15:39:45 EDT
+1996}). See if you can figure out what the other commands do, and copy your
 results into your answer buffer.
 
 \paragraph{Exercise 10: Getting information from around the world}
@@ -562,7 +562,7 @@ procedure which evaluates to 3.
     (x 3)))
 \endlisp
 
-\beginlisp 
+\beginlisp
 (define foo5
   (lambda (x)
     (cond ((= x 2)
@@ -582,12 +582,3 @@ in the answer buffer.
 
 
 \end{document}
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-\input /6001-devel/spring94/6001mac
+\input{../6001mac}
 
 \begin{document}
 
@@ -345,7 +345,7 @@ collecting)}.  \footnote{Notice that {\tt y} is bound to the list {\tt
 to {\tt y} and {\tt z} be single items by writing the pattern as {\tt
 (?? x) double major in (? y) and (? z)}.  This would match {\tt (I
 want to double major in math and baseball)}, but it would not match
-{\tt (I want to double major in math and stamp collecting)}.} 
+{\tt (I want to double major in math and stamp collecting)}.}
 
 The pattern matcher produces a {\em dictionary} that associates each
 pattern variable to the value that it matches.  The {\em action} part
@@ -448,13 +448,13 @@ advisor's ``catalog'':
 
 \beginlisp
 (define catalog
-  (list 
+  (list
    (make-entry '8:01 'physics '(classical mechanics) 12 '(GIR physics) '())
    (make-entry '8:02 'physics '(electricity and magnetism) 12 '(GIR physics) '(8:01 18:01))
    (make-entry '8:03 'physics '(waves) 12 '(rest) '(8:02 18:02))
    (make-entry '8:04 'physics '(quantum weirdness) 12 '(REST) '(8:03 18:03))
    (make-entry '18:01 'math '(elementary differential and integral calculus) 12 '(GIR calculus) '())
-   (make-entry '18:02 'math '(multivariate calculus) 12 '(GIR calculus) '(18:01)) 
+   (make-entry '18:02 'math '(multivariate calculus) 12 '(GIR calculus) '(18:01))
    (make-entry '18:03 'math '(differential equations) 12 '(REST) '(18:02))
    (make-entry '18:04 'math '(theory of functions of a complex variable) 12 '() '(18:03))
    (make-entry '6:001 'eecs '(scheming with abelson and sussman) 15 '(REST) '(true-grit))
@@ -528,7 +528,7 @@ $s$'s are in the catalog.  See the attached code for how this
 restriction is implemented.
 
 \beginlisp
-(define subject-knowledge 
+(define subject-knowledge
   (list
    (make-rule
     `(what is (? s ,in-catalog) about)
@@ -548,7 +548,7 @@ restriction is implemented.
                            '(is about)
                            (entry-summary entry))))
                 (value 's dict))) )
-    
+
    (make-rule
     `(how many units is (? s ,in-catalog))
     (lambda (dict)
@@ -657,7 +657,7 @@ product of all the elements in a list of numbers.
 
 \paragraph{Pre-lab Exercise 3:} Use {\tt map} together with {\tt
 reduce} to compute the sum of the squares of the elements in a list of
-numbers. 
+numbers.
 
 \paragraph{Pre-lab Exercise 4:} What result is returned by
 
@@ -696,7 +696,7 @@ Start the advisor program by typing
 your inputs by typing {\tt ctl-X ctl-E}.  Do {\bf not} use {\tt M-z}.}
 
 
-\paragraph{Lab Exercise 1:} 
+\paragraph{Lab Exercise 1:}
 Expand the advisor's store of {\tt beginnings} and {\tt
 general-advice}.  You may find it helpful to consult MIT course
 evaluation guides---or fabricate your own helpful advice.  Turn in a
@@ -779,13 +779,13 @@ some interactions showing that it works.
 
 \paragraph{Lab Exercise 9:}
 Design and implement some other improvement that extends the advisor's
-capabilities. 
+capabilities.
 
 For example, the program currently does not use the information about the
 Institute requirements that the subjects satisfy such as GIR or HASS.
 There is not much use of the subject summary information either.
 For example, you might ask the advisor if there is a subject about
-electricity.  You could add more entries to the catalog or include more 
+electricity.  You could add more entries to the catalog or include more
 information in the catalog entries.
 
 Implement your modification.  You need not feel constrained to follow
@@ -808,3 +808,8 @@ in for this problem set.
 
 
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

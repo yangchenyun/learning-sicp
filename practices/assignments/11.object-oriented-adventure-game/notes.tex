@@ -1,6 +1,6 @@
 % Document Type: LaTeX
 % Master File: lec-inherit.tex
-\input ../6001mac
+\input{../6001mac}
 
 \begin{document}
 
@@ -33,7 +33,7 @@ Object models:
 \item    Variables stand for places whose contents can change.
 
 \item     Compound structures are not determined by their parts, but
-rather by their ``identity''. 
+rather by their ``identity''.
 
 \end{itemize}
 
@@ -57,7 +57,7 @@ The structure of this system follows that given by J. Rees and N. Adams,
 on Lisp and Functional Programming.})
 
 An {\it  object}  is a procedure that, given a {\it message}  as
-argument, returns another procedure called a method.  
+argument, returns another procedure called a method.
 
 \beginlisp
 (define (get-method object message)
@@ -65,8 +65,8 @@ argument, returns another procedure called a method.
 \endlisp
 
 For example, the following procedure creates a simple object called a
-speaker whose only method is that it can {\it  say} something (a list), 
-which it does by printing the list:  
+speaker whose only method is that it can {\it  say} something (a list),
+which it does by printing the list:
 
 \beginlisp
 (define (make-speaker)
@@ -76,13 +76,13 @@ which it does by printing the list:
           (else (no-method "SPEAKER"))))
   self)
 \endlisp
-        
+
 Notice that the object refers to itself as {\tt self}. We'll  make the
 convention that if an object does not recognize the message it will
 signal this by using {\tt  no-method}, which returns something that our
-object-oriented programming system will recognize.  
+object-oriented programming system will recognize.
 
-\beginlisp                                              
+\beginlisp
 (define (no-method name)
   (list 'no-method name))
 \null
@@ -102,7 +102,7 @@ to the arguments.  If the object has no method for this message,  {\tt
 ask} will produce an error.  (The procedure {\tt apply} takes a
 procedure and a list of arguments and applies the procedure to the
 arguments.  Note the use of dot notation, so  that {\tt args} will be a list
-of the arguments.)   
+of the arguments.)
 
 \beginlisp
 (define (ask object message . args)
@@ -124,7 +124,7 @@ One thing we may want to do is define an object type to be {\it a kind
 of} some other object type.  For instance, we could say that a lecturer
 is a kind of speaker, expect that the lecturer also has a method called
 lecture.  To lecture something, the lecturer says it and then says ``You
-should be taking notes'':   
+should be taking notes'':
 
 \beginlisp
 (define (make-lecturer)
@@ -144,7 +144,7 @@ passes the message on
 to the internal speaker.  Thus, a lecturer can do anything a speaker can
 (i.e., say things) , and also lecture.  In the object-oriented
 programming jargon, one says that {\tt  lecturer}  {\it inherits} the
-{\tt say}  method from {\tt speaker,} or that {\tt speaker} is a {\it 
+{\tt say}  method from {\tt speaker,} or that {\tt speaker} is a {\it
 superclass}  of {\tt  lecturer.}
 
 \beginlisp
@@ -184,7 +184,7 @@ lecturer would:
 \endlisp
 
 Albert here says things arrogantly, as he should.  But he appears to have
-lost his arrogance when we ask him to lecture: 
+lost his arrogance when we ask him to lecture:
 
 \beginlisp
 (ask Albert 'lecture '(the sky is blue))
@@ -196,7 +196,7 @@ The bug here is that when Albert tells his internal {\tt lecturer} to handle the
 {\tt lecture}  message, all information that this is being done as part of Albert
 is lost.  We can see this from the following environment diagram.  Note
 that Albert, his internal lecturer, and his internal lecturer's internal
-speaker, each have a {\tt self}.     
+speaker, each have a {\tt self}.
 
 \vskip 2in
 %insert figure
@@ -212,13 +212,13 @@ returns its {\tt lecture} method, namely,
 \endlisp
 
 it is the lecturer's {\tt self,} not the Albert {\tt self} that is asked to
-{\tt say} things. 
+{\tt say} things.
 
 {\bf Fixing the bug}
 
 We can fix this by changing the implementation so that all the methods
 keep track of self, by taking self as an extra input.  For example,
-make-speaker now becomes:  
+make-speaker now becomes:
 
 \beginlisp
 (define (make-speaker)
@@ -231,7 +231,7 @@ make-speaker now becomes:
 
 To make this implementation work, we change the definition of  {\tt ask}
 so that the object is also passed to the method (to serve as the {\tt
-self} argument):  
+self} argument):
 
 \beginlisp
 (define (ask object message . args)
@@ -245,7 +245,7 @@ Here are the new corresponding definitions of {\tt make-lecturer} and
 {\tt make-arrogant-lecturer.}  Other than the extra {\tt self} arguments
 to the
 methods, everything works as before, except this time the bug has been
-fixed:   
+fixed:
 
 \beginlisp
 (define (make-lecturer)
@@ -283,7 +283,7 @@ fixed:
 %Our implementation is now correct, but object definitions are tedious to
 %type.  We can make our life easier by establishing some abbreviations
 %that automatically fill in the {\tt self} arguments and the {\tt eq?}
-%tests of the message.   
+%tests of the message.
 %
 %We'll set up the syntax {\tt (make-object body)} to be an abbreviation for
 %
@@ -294,13 +294,13 @@ fixed:
 %\endlisp
 %
 %and we'll set up the syntax {\tt (object-cond clauses)} to be just like
-%{\tt cond} except that clauses of the form 
+%{\tt cond} except that clauses of the form
 %
 %\beginlisp
 %(defmethod (name args) body)
 %\endlisp
 %
-%will be abbreviations for 
+%will be abbreviations for
 %
 %\beginlisp
 %((eq? message 'name) (lambda (self args) body))
@@ -308,8 +308,8 @@ fixed:
 %
 %We haven't shown you in 6.001 how to actually set up such abbreviations.
 %Take it on faith that we can do so.  You'll learn how to do this sort of
-%thing in problem set 8.  
-% 
+%thing in problem set 8.
+%
 %Here are our new object definitions, once we take advantage of these
 %abbreviations:
 %
@@ -341,7 +341,7 @@ fixed:
 {\bf Multiple superclasses}
 
 We can have object types that inherit methods from more than one type.
-Here, for example, is a {\tt singer,} that can sing and also say things: 
+Here, for example, is a {\tt singer,} that can sing and also say things:
 
 \beginlisp
 (define (make-singer)
@@ -389,7 +389,7 @@ We'll make Ben be both a singer and a lecturer:
 Ben is both a singer and a lecturer, but primarily a singer.  It is only
 if his internal singer has no method that he passes the message on to
 his internal lecturer.  We could also have done it the other way round.
-Alyssa here is also both a singer and a lecturer, but primarily a lecturer:   
+Alyssa here is also both a singer and a lecturer, but primarily a lecturer:
 
 \beginlisp
 (define alyssa
@@ -413,6 +413,6 @@ Alyssa here is also both a singer and a lecturer, but primarily a lecturer:
 
 Much of the complexity of contemporary object-oriented programming
 languages has to do with specifying ways to control the order of
-inheritance in situations like this. 
+inheritance in situations like this.
 
 \end{document}

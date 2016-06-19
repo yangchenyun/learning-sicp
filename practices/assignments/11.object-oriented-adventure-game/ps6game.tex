@@ -1,4 +1,4 @@
-\input ../6001mac
+\input{../6001mac}
 
 \begin{document}
 
@@ -88,26 +88,26 @@ places so that the following scenario is feasible:
 
 \beginlisp
 (ask albert 'look-around)
-At albert-office : albert says -- I see nothing 
+At albert-office : albert says -- I see nothing
 ;Value: \#f
 \null
 (ask (ask albert 'place) 'exits)
 ;Value: (west down)
 \null
 (ask albert 'go 'down)
-albert moves from albert-office to tech-square 
+albert moves from albert-office to tech-square
 ;Value: \#t
 \null
 (ask albert 'go 'south)
-albert moves from tech-square to building-36 
+albert moves from tech-square to building-36
 ;Value: \#t
 \null
 (ask albert 'go 'up)
-albert moves from building-36 to computer-lab 
+albert moves from building-36 to computer-lab
 ;Value: \#t
 \null
 (ask gerry 'look-around)
-at gerry-office : gerry says -- I see nothing 
+at gerry-office : gerry says -- I see nothing
 ;Value: \#f
 \null
 (ask (ask gerry 'place) 'exits)
@@ -124,14 +124,14 @@ gerry moves from albert-office to tech-square
 ;Value: \#t
 \null
 (ask gerry 'go 'south)
-gerry moves from tech-square to building-36 
+gerry moves from tech-square to building-36
 ;Value: \#t
 \endlisp
 
 \beginlisp
 (ask gerry 'go 'up)
-gerry moves from building-36 to computer-lab 
-At computer-lab : gerry says -- hi albert 
+gerry moves from building-36 to computer-lab
+At computer-lab : gerry says -- hi albert
 ;Value: \#t
 \endlisp
 
@@ -166,15 +166,15 @@ gerry}.  The manual looks useful, so we have {\cf albert} take it and leave.
 
 \beginlisp
 (ask albert 'look-around)
-At computer-lab : albert says -- I see computer-manual gerry 
+At computer-lab : albert says -- I see computer-manual gerry
 ;Value: (computer-manual gerry)
 \null
 (ask albert 'take computer-manual)
-At computer-lab : albert says -- I take computer-manual 
+At computer-lab : albert says -- I take computer-manual
 ;Value: \#t
 \null
 (ask albert 'go 'down)
-albert moves from computer-lab to building-36 
+albert moves from computer-lab to building-36
 ;Value: \#t
 \endlisp
 
@@ -184,45 +184,45 @@ EGG-Atrium:
 
 \beginlisp
 (ask gerry 'go 'down)
-gerry moves from computer-lab to building-36 
-At building-36 : gerry says -- Hi albert 
+gerry moves from computer-lab to building-36
+At building-36 : gerry says -- Hi albert
 ;Value: \#t
 \null
 (ask gerry 'take computer-manual)
-At building-36 : albert says -- I lose computer-manual 
-At building-36 : albert says -- yaaaah! I am upset! 
-At building-36 : gerry says -- I take computer-manual 
+At building-36 : albert says -- I lose computer-manual
+At building-36 : albert says -- yaaaah! I am upset!
+At building-36 : gerry says -- I take computer-manual
 ;Value: \#t
 \null
 (ask albert 'go 'west)
 albert moves from building-36 to egg-atrium
 ;Value: \#t
 \endlisp
- 
+
 Unfortunately for {\cf albert}, beneath the EGG-Atrium is an inaccessible
 dungeon, inhabited by a troll named {\cf grendel}.  A troll is a
-kind of person; it can move around, take 
+kind of person; it can move around, take
 things, and so on.  When a troll gets a {\cf  move} message from the clock,
 it acts just like an ordinary person---unless someone else is in the
 room.  When {\cf grendel} decides to {\cf act}, it's game over for {\cf albert}:
 
 \beginlisp
 (ask grendel 'move)
-grendel moves from dungeon to egg-atrium 
+grendel moves from dungeon to egg-atrium
 At egg-atrium : grendel says -- Hi albert
 ;Value: \#t
-\endlisp 
+\endlisp
 
 After a few more moves, {\cf grendel} acts again:
 
 \beginlisp
 (ask grendel 'move)
-At egg-atrium : grendel says -- Growl.... I'm going to eat you, albert 
-At egg-atrium : albert says -- 
-                   Dulce et decorum est 
-                   pro computatore mori! 
-albert moves from egg-atrium to heaven 
-At egg-atrium : grendel says -- Chomp chomp. albert tastes yummy! 
+At egg-atrium : grendel says -- Growl.... I'm going to eat you, albert
+At egg-atrium : albert says --
+                   Dulce et decorum est
+                   pro computatore mori!
+albert moves from egg-atrium to heaven
+At egg-atrium : grendel says -- Chomp chomp. albert tastes yummy!
 ;Value: *burp*
 \endlisp
 
@@ -322,7 +322,7 @@ At some point in the evaluation of the second expression, the expression
 (set! owner new-owner)
 \endlisp
 
-\noindent 
+\noindent
 will be evaluated in some environment.  Draw an environment
 diagram, showing the full structure of {\cf ice-cream} at the point where
 this expression is evaluated.  Don't show the details of {\cf gerry}
@@ -386,7 +386,7 @@ are outlined in the code excerpts below:
                (ask place 'add-thing self)))
             \vdots))))
 \endlisp
-      
+
 Louis Reasoner suggests that it would be simpler if we change the
 last line of the {\cf make-person} version of the {\cf install} method to read:
 

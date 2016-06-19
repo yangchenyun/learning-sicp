@@ -1,12 +1,12 @@
 % Document Type: LaTeX
 % Master File: ps7oop.tex
-\input 6001mac
+\input{../6001mac}
 
 \def\fbox#1{%
   \vtop{\vbox{\hrule%
      \hbox{\vrule\kern3pt%
  \vtop{\vbox{\kern3pt#1}\kern3pt}%
- \kern3pt\vrule}}% 
+ \kern3pt\vrule}}%
  \hrule}}
 
 \begin{document}
@@ -347,7 +347,7 @@ want to think about how to add such a feature to TOOL.}
         ;;((lambda? exp) (make-procedure exp env))      ;We don't need lambda!
         ((conditional? exp) (eval-cond (clauses exp) env))
         ((generic-function-definition? exp)               ;DEFINE-GENERIC-FUNCTION
-         (eval-generic-function-definition exp env)) 
+         (eval-generic-function-definition exp env))
         ((method-definition? exp) (eval-define-method exp env)) ;DEFINE-METHOD
         ((class-definition? exp) (eval-define-class exp env))     ;DEFINE-CLASS
         ((instance-creation? exp) (eval-make exp env))          ;MAKE
@@ -548,7 +548,7 @@ calls {\tt tool-apply} with the procedure part of the method.
 (define (apply-generic-function generic-function arguments)
   (let ((methods (compute-applicable-methods-using-classes
                   generic-function
-                  (map class-of arguments)))) 
+                  (map class-of arguments))))
     (if (null? methods)
         (error "No method found -- APPLY-GENERIC-FUNCTION")
         (tool-apply (method-procedure (car methods)) arguments))))
@@ -819,7 +819,3 @@ likely to be time-consuming.
 
 
 \end{document}
-
-
-
-

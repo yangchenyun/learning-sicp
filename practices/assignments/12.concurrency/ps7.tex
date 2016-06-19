@@ -1,12 +1,12 @@
 % Document Type: LaTeX
 % Master File: ps7.tex
-\input ../6001mac
- 
+\input{../6001mac}
+
 \def\fbox#1{%
  \vtop{\vbox{\hrule%
     \hbox{\vrule\kern3pt%
 \vtop{\vbox{\kern3pt#1}\kern3pt}%
-\kern3pt\vrule}}% 
+\kern3pt\vrule}}%
 \hrule}}
 
 \begin{document}
@@ -65,7 +65,7 @@ market-constructor procedure as follows:
 There are several messages accepted by a market.  For example, one may
 obtain the current price on the Singapore market as follows:
 
-\beginlisp 
+\beginlisp
 (singapore 'get-price)
 ;;; Value: 16673.23
 \endlisp
@@ -99,7 +99,7 @@ follows:
         (pending-orders '())
         (orders-serializer (make-serializer)))
     (define (the-market m)
-      (cond ((eq? m 'new-price!)        
+      (cond ((eq? m 'new-price!)
              (price-serializer
               (lambda (update)
                 (set! price (update price)))))
@@ -139,7 +139,7 @@ guarded by the serializer contains both the assignment to the
 protected variable and a read access of that variable.  The acceptance
 of a new order is similarly serialized.  Execution of an order is also
 serialized with the {\tt orders-serializer}, but this is a much more
-complicated situation.  
+complicated situation.
 
 \paragraph{Exercise 1:}
 Why do we need two different serializers to implement a market?  What
@@ -406,8 +406,3 @@ program works.  Show output demonstrating that interesting trades are
 being made.
 
 \end{document}
-
-
-
-
-

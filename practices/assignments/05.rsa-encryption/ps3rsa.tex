@@ -1,12 +1,12 @@
 % Document Type: LaTeX
 % Master File: ps3rsa.tex
-\input ../6001mac
+\input{../6001mac}
 
 \def\fbox#1{%
   \vtop{\vbox{\hrule%
      \hbox{\vrule\kern3pt%
  \vtop{\vbox{\kern3pt#1}\kern3pt}%
- \kern3pt\vrule}}% 
+ \kern3pt\vrule}}%
  \hrule}}
 \usepackage{../epsfig}
 \begin{document}
@@ -106,7 +106,7 @@ transformation} defined by $n$ and $e$:
 
 \smallskip
 \centerline{encrypted message = $s$ to the power of $e$, modulo $n$}
-or 
+or
 \[S = (s^e) \bmod n.\]
 
 If you receive an encrypted message $S$, you decrypt it by performing
@@ -180,7 +180,7 @@ value using your private key.  The transformed hash value is your
 digital signature, which you transmit along with the message.  Anyone
 who receives a message can authenticate the signature by transforming
 it using your {\it public key} and checking that this gives the same
-result as applying the compression function to the message.  
+result as applying the compression function to the message.
 
 The reason this scheme works is that anyone who wants to forge a
 message claiming to be from you must produce a number that, when
@@ -267,7 +267,7 @@ chosen integer between {\tt start} and ${\tt start}+{\tt range}$:
 \null
 (define choose-random
   ;; restriction of Scheme RANDOM primitive
-  (let ((max-random-number (expt 10 18))) 
+  (let ((max-random-number (expt 10 18)))
     (lambda (n)
       (random (floor->exact (min n max-random-number))))))
 \endlisp
@@ -363,7 +363,7 @@ general, {\tt (modulo a b)} always has the same sign as {\tt b}, while
 Solving $ax+by=1$ can be accomplished by a nice recursive trick that
 is closely related to the recursive GCD algorithm in section
 1.2.5 of the text.  Let $q$ be the quotient of $a$ by $b$, and let
-$r$ be the remainder of $a$ by $b$, so that 
+$r$ be the remainder of $a$ by $b$, so that
 \[a=bq+r\]
 Now (recursively) solve the equation
 \[b\bar{x}+r\bar{y}=1\]
@@ -605,7 +605,7 @@ of integers to decode and a decoding key, and returns a list of
 integers, undoing the transformation implemented by {\tt
 RSA-convert-list}.  Hint: This procedure is very similar in form to
 {\tt RSA-convert-list}.  If you find yourself doing something much
-more complicated, then you are barking up the wrong tree---ask 
+more complicated, then you are barking up the wrong tree---ask
 for help if necessary.
 
 To test your procedure, try
@@ -658,7 +658,7 @@ combine these to produce a signed message.
 As a test, try
 
 \beginlisp
-(define result2 
+(define result2
   (encrypt-and-sign "Test message from user 1 to user 2"
                     test-private-key1
                     test-public-key2))
@@ -753,7 +753,7 @@ procedure together with the values you found for the integers $x$ and $y$.
 Also turn in a demonstration that your key pair can be used to encrypt and
 decrypt messages.
 
-\paragraph{Exercise 5:} 
+\paragraph{Exercise 5:}
 You now have a full implementation of an RSA cryptographic system,
 complete with facilities for encryption, decryption, digital
 signatures and signature authentication, and generating new keys.
@@ -805,7 +805,3 @@ long; 100 digits long.  Give your answer in seconds, minutes, days,
 or years, whichever seems most appropriate.
 
 \end{document}
-
-
-
-

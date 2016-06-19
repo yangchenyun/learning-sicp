@@ -1,8 +1,9 @@
-#lang r5rs
-(#%require racket/include)
-(include "../lib/pic-lib.ss")
-(include "../lib/arithmetic.ss")
-(include "../lib/curves.scm")
+#lang racket
+
+(require "../lib/pic-lib.rkt")
+(require "../lib/curves.rkt")
+(require "../lib/utils.rkt")
+(require "../lib/arithmetic.rkt")
 
 ;; Section 1
 ((compose log square) 2)
@@ -29,37 +30,7 @@
 ;; 3.
 (((thrice thrice) square) 1) ;; 1
 ;; 4.
-;; (((thrice thrice) square) 2) ;; 2^(2^27) very large to print
-
-;; Section 2
-
-(#%require (only racket/math nan?))
-(define make-point cons)
-(define x-of car)
-(define y-of cdr)
-(define null-point (make-point +nan.0 +nan.0))
-(define (null-point? point)
-  (or
-   ((compose not real?) (x-of point))
-   ((compose not real?) (y-of point))
-   (nan? (x-of point))
-   (nan? (y-of point))))
-
-(define (unit-circle t)
-  (make-point (sin (* 2pi t))
-              (cos (* 2pi t))))
-
-(define (unit-line-at y)
-  (lambda (t) (make-point t y)))
-
-(define unit-line (unit-line-at 0))
-
-(define (enumerate-unit-in step)
-  (define (iter s e result)
-    (if (> s e)
-        result
-        (iter (+ s step) e (cons s result))))
-  (iter 0 1 '()))
+;; (((thrice thrice) square) 2) ;; 2^(2^27) very large to displayln
 
 ;; Exercise 2
 ;; 1. What is the type of unit-line-at􏱨
@@ -170,12 +141,11 @@
 ;; for reference
 ;; http://www.inwap.com/pdp10/hbaker/hakmem/Figure8.html
 
-;; Exercise 6.A
-
+(displayln "Exercise 6.A")
 (define (show-points-gosper level curve)
   (paint-curve ((repeated gosperize level) curve)))
 
-;; Exercise 6.B
+(displayln "Exercise 6.B")
 (show-points-gosper 10 unit-circle)
 
 ;; now try to loose the angle being rotated
@@ -195,22 +165,22 @@
 
 (paint-curve (param-gosper 3 (lambda (l) (/ pi 6)) unit-line) 1.5)
 
-;; Exercise 7.A
-(define (param-gosperize theta)
+(displayln "Exercise 7.A")
+(set! param-gosperize (lambda (theta)
   (lambda (curve)
     (let ((scale-factor (/ (/ 1 (cos theta)) 2)))
       (let ((scaled-curve ((scale scale-factor) curve)))
         (put-in-standard-position
          (connect-ends ((rotate-around-origin theta) scaled-curve)
-                       ((rotate-around-origin (- theta)) scaled-curve)))))))
+                       ((rotate-around-origin (- theta)) scaled-curve))))))))
 
 (paint-curve (param-gosper 8 (lambda (l) pi/4) unit-line))
 
-;; Exercise 7.B
+(displayln "Exercise 7.B")
 (paint-curve (param-gosper 8 (lambda (l) (/ pi (+ l 2))) unit-line) 1.5)
 (paint-curve (param-gosper 9 (lambda (l) (/ pi (expt 1.3 l))) unit-line) 2)
 
-;; Exercise 7.C
+(displayln "Exercise 7.C")
 (time (paint-curve (gosper-curve 10)))
 ;; cpu time: 3118 real time: 3119 gc time: 74
 (time (paint-curve (param-gosper 10 (lambda (l) pi/4) unit-line)))
@@ -219,7 +189,7 @@
 
 ;; There is no significant change to be noticed
 
-;; Exercise 8.A/B
+(displayln "Exercise 8.A/B")
 ;; This definition is correct.
 ;; but the ben's version resulted in exponential recursion for `curve' procedure
 
@@ -228,22 +198,11 @@
 
 ;; But the `rotate-around-origin' is called twice for each step, what it is linear?
 ;; A tricky point here is at the `connect-rigidly' procedure
-(define (connect-rigidly curve1 curve2)
-  (lambda (t)
-    (if (< t 1/2)
-        (curve1 (* 2 t))
-        (curve2 (- (* 2 t) 1)))))
 
 ;; it takes into procedures and apply them *for half the arguments* each
 ;; so as long as the two procedures have the same process shape
 ;; it will *remain the same shape*.
 ;; (connect-rigidly ... ) equals to one (rotate-around-origin ... ) procedure
-
-(define (gosperize curve)
-  (let ((scaled-curve ((scale (/ (sqrt 2) 2)) curve)))
-    (connect-rigidly ((rotate-around-origin pi/4) scaled-curve)
-                     ((translate .5 .5)
-                      ((rotate-around-origin (- pi/4)) scaled-curve)))))
 
 ;; so the original call expands to a linear processes shape like
 ;; ->gosperize
@@ -258,16 +217,23 @@
 ;; with bens-rotate version, `rotate' will calculate `curve' twice, and result in a
 ;; tree recursion whose time is exponential
 
+(displayln "Time with 'rotate-around-origin")
 (for-each (lambda (level)
             (time (paint-curve (gosper-curve level))))
           '(1 2 3 4 5 6 7))
 
-(begin (define _rotate-around-origin rotate-around-origin)
-       (set! rotate-around-origin bens-rotate)
-       (for-each (lambda (level)
-                   (time (paint-curve (gosper-curve level))))
-                 '(1 2 3 4 5 6 7))
-       (set! rotate-around-origin _rotate-around-origin))
+(displayln "Time with 'bens-rotate")
+(begin
+  (letrec ((gosperize (lambda (curve)
+                      (let ((scaled-curve ((scale (/ (sqrt 2) 2)) curve)))
+                        (connect-rigidly ((bens-rotate pi/4) scaled-curve)
+                                         ((translate .5 .5)
+                                          ((bens-rotate (- pi/4)) scaled-curve))))))
+         (gosper-curve (lambda (level)
+                         ((repeated gosperize level) unit-line))))
+    (for-each (lambda (level)
+                (time (paint-curve (gosper-curve level))))
+              '(1 2 3 4 5 6 7))))
 
 ;; Exercise 9.A/B
 ;; start with some experiment
@@ -292,6 +258,6 @@
 
 (paint-curve (kochize 4) 1)
 
-;; Exercise 10
+(displayln "Exercise 10")
 (paint-curves (map (lambda (l)
        ((deriv-t 1) (gosper-curve l))) '(1 2 3 4 5 6 7 8 9)) 20)

@@ -1,3 +1,6 @@
+#lang racket
+(provide (all-defined-out))
+
 ;; for method dispatch table
 (define DISPATCH-TABLE (make-hash))
 (define (put op type proc)
@@ -12,7 +15,7 @@
   (hash-set! COERCION-TABLE (cons from to) proc))
 (define (get-coercion from to)
   (hash-ref COERCION-TABLE (cons from to) #f))
-(define (dispatch-clear!)
+(define (coercion-clear!)
   (hash-clear! COERCION-TABLE))
 
 ;; for type-tags

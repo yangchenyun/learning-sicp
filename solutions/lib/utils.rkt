@@ -1,3 +1,6 @@
+#lang racket
+(provide (all-defined-out))
+
 ;; utility
 (define (compose f g)
   (define (f*g x)
@@ -10,3 +13,7 @@
 	(else (compose f (repeated f (- n 1))))))
 
 (define (identity x) x)
+
+(define (displayln list)
+  (display list)
+  (newline))

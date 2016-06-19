@@ -1,4 +1,6 @@
-(#%require (only 2htdp/image
+#lang racket
+
+(require (only-in 2htdp/image
                   rectangle
                   add-line
                   circle
@@ -7,8 +9,11 @@
                   underlay
                   overlay))
 
-(#%require (only racket/base foldr))
-(#%require (only racket/math nan?))
+(require (only-in racket/base foldr))
+(require "./utils.rkt")
+(require "./curves.rkt")
+
+(provide (all-defined-out))
 
 ;; the vector
 (define make-vect cons)
@@ -32,18 +37,6 @@
 (define segment-end cdr)
 
 ;; the point
-(define make-point cons)
-(define x-of car)
-(define y-of cdr)
-(define null-point (make-point +nan.0 +nan.0))
-(define (null-point? point)
-  (or
-   ((compose not real?) (x-of point))
-   ((compose not real?) (y-of point))
-   (nan? (x-of point))
-   (nan? (y-of point))))
-
-(define point->vector identity)
 
 ;; the frame
 (define (make-frame origin edge1 edge2)
@@ -149,6 +142,13 @@
   (underlay *screen* (painter screen-frame)))
 
 ;; only plot the [0 1] region
+(define (enumerate-unit-in step)
+  (define (iter s e result)
+    (if (> s e)
+        result
+        (iter (+ s step) e (cons s result))))
+  (iter 0 1 '()))
+
 (define (paint-curves curves . canvas-scale)
   (let* ((canvas-scale (if (null? canvas-scale) 1 (car canvas-scale)))
          (map-scale (/ .5 canvas-scale))

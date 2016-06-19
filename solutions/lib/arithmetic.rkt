@@ -1,3 +1,6 @@
+#lang racket
+(provide (all-defined-out))
+
 (define (average a b) (/ (+ a b) 2))
 (define (cube x) (* x x x))
 (define (square x) (* x x))

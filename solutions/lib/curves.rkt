@@ -1,16 +1,28 @@
+#lang racket
+(require (only-in racket/math nan?))
+
+(require "../lib/arithmetic.rkt")
+(require "../lib/utils.rkt")
+
+(provide (all-defined-out))
+
 ;;;; CURVES.SCM
 
                                         ;Point = (Sch-Num X Sch-Num)
 
-;; (define (make-point x y)
-;;   (lambda (bit)
-;;     (if (zero? bit) x y)))
+(define make-point cons)
+(define x-of car)
+(define y-of cdr)
+(define null-point (make-point +nan.0 +nan.0))
+(define (null-point? point)
+  (or
+   ((compose not real?) (x-of point))
+   ((compose not real?) (y-of point))
+   (nan? (x-of point))
+   (nan? (y-of point))))
 
-;; (define (x-of point)
-;;   (point 0))
+(define point->vector identity)
 
-;; (define (y-of point)
-;;   (point 1))
                                         ;Unit-Interval = {x: Sch-Num | 0 <= x <= 1}
                                         ;Curve = Unit-interval --> Point
 
@@ -20,8 +32,10 @@
   (make-point (sin (* 2pi t))
               (cos (* 2pi t))))
 
-(define (unit-line t)
-  (make-point t 0))
+(define (unit-line-at y)
+  (lambda (t) (make-point t y)))
+
+(define unit-line (unit-line-at 0))
 
 (define (alternative-unit-circle t)
   (make-point (sin (* 2pi (square t)))
@@ -32,12 +46,12 @@
                               ;;SOME CURVE-TRANSFORMS
 
 
-(define (rotate-pi/2 curve)
-  (lambda (t)
-    (let ((ct (curve t)))
-      (make-point
-       (- (y-of ct))
-       (x-of ct)))))
+;; (define (rotate-pi/2 curve)
+;;   (lambda (t)
+;;     (let ((ct (curve t)))
+;;       (make-point
+;;        (- (y-of ct))
+;;        (x-of ct)))))
 
                            ;;CONSTRUCTORS OF CURVE-TRANSFORMS
 
@@ -114,29 +128,28 @@
 ;;; start point is at the origin, then rotating it about the origin to put
 ;;; its endpoint on the x axis, then scaling it to put the endpoint at (1,0).
 
-(define (put-in-standard-position curve)
-  (let* ((start-point (curve 0))
-         (curve-started-at-origin
-          ((translate (- (x-of start-point))
-                      (- (y-of start-point)))
-           curve))
-         (new-end-point (curve-started-at-origin 1))
-         (theta (atan (y-of new-end-point) (x-of new-end-point)))
-         (curve-ended-at-x-axis
-          ((rotate-around-origin (- theta)) curve-started-at-origin))
-         (end-point-on-x-axis (x-of (curve-ended-at-x-axis 1))))
-    ((scale (/ 1 end-point-on-x-axis)) curve-ended-at-x-axis)))
-
+;; (define (put-in-standard-position curve)
+;;   (let* ((start-point (curve 0))
+;;          (curve-started-at-origin
+;;           ((translate (- (x-of start-point))
+;;                       (- (y-of start-point)))
+;;            curve))
+;;          (new-end-point (curve-started-at-origin 1))
+;;          (theta (atan (y-of new-end-point) (x-of new-end-point)))
+;;          (curve-ended-at-x-axis
+;;           ((rotate-around-origin (- theta)) curve-started-at-origin))
+;;          (end-point-on-x-axis (x-of (curve-ended-at-x-axis 1))))
+;;     ((scale (/ 1 end-point-on-x-axis)) curve-ended-at-x-axis)))
 
                                         ;Binary-transform = (Curve,Curve --> Curve)
 
 ;;; CONNECT-RIGIDLY makes a curve consisting of curve1 followed by curve2.
 
-(define (connect-rigidly curve1 curve2)
-  (lambda (t)
-    (if (< t (/ 1 2))
-	(curve1 (* 2 t))
-	(curve2 (- (* 2 t) 1)))))
+;; (define (connect-rigidly curve1 curve2)
+;;   (lambda (t)
+;;     (if (< t (/ 1 2))
+;; 	(curve1 (* 2 t))
+;; 	(curve2 (- (* 2 t) 1)))))
 
 ;;; CONNECT-ENDS makes a curve consisting of curve1 followed by
 ;;;  a copy of curve2 starting at the end of curve1
@@ -147,41 +160,40 @@
 
 ;;; GOSPERIZE is a Curve-Transform
 
-(define (gosperize curve)
-  (let ((scaled-curve ((scale (/ (sqrt 2) 2)) curve)))
-    (connect-rigidly ((rotate-around-origin (/ pi 4)) scaled-curve)
-                     ((translate .5 .5)
-                      ((rotate-around-origin (/ -pi 4)) scaled-curve)))))
+;; (define (gosperize curve)
+;;   (let ((scaled-curve ((scale (/ (sqrt 2) 2)) curve)))
+;;     (connect-rigidly ((rotate-around-origin (/ pi 4)) scaled-curve)
+;;                      ((translate .5 .5)
+;;                       ((rotate-around-origin (/ -pi 4)) scaled-curve)))))
 
 
 ;;; GOSPER-CURVE is of type (Sch-Num --> Curve)
 
-(define (gosper-curve level)
-  ((repeated gosperize level) unit-line))
+;; (define (gosper-curve level)
+;;   ((repeated gosperize level) unit-line))
 
 
                       ;;DRAWING GOSPER CURVES
 
-(define (show-connected-gosper level)
-  ((draw-connected g1 200)
-   ((squeeze-rectangular-portion -.5 1.5 -.5 1.5)
-    (gosper-curve level))))
-
+;; (define (show-connected-gosper level)
+;;   ((draw-connected g1 200)
+;;    ((squeeze-rectangular-portion -.5 1.5 -.5 1.5)
+;;     (gosper-curve level))))
 
                       ;;PARAMETERIZED GOSPER
 
 ;;; PARAM-GOSPER is of type ((Sch-Num,(Int --> Sch-Num)) --> Curve)
 
-(define (param-gosper level angle-at)
-  (if (= level 0)
-      unit-line
-      ((param-gosperize (angle-at level))
-       (param-gosper (- level 1) angle-at))))
+;; (define (param-gosper level angle-at)
+;;   (if (= level 0)
+;;       unit-line
+;;       ((param-gosperize (angle-at level))
+;;        (param-gosper (- level 1) angle-at))))
 
-(define (param-gosperize theta)
-  (lambda (curve)
-    (let ((scale-factor (/ (/ 1 (cos theta)) 2)))
-      (let ((scaled-curve ((scale scale-factor) curve)))
-        (connect-rigidly ((rotate-around-origin theta) scaled-curve)
-                         ((translate .5 (* (sin theta) scale-factor))
-                          ((rotate-around-origin (- theta)) scaled-curve)))))))
+;; (define (param-gosperize theta)
+;;   (lambda (curve)
+;;     (let ((scale-factor (/ (/ 1 (cos theta)) 2)))
+;;       (let ((scaled-curve ((scale scale-factor) curve)))
+;;         (connect-rigidly ((rotate-around-origin theta) scaled-curve)
+;;                          ((translate .5 (* (sin theta) scale-factor))
+;;                           ((rotate-around-origin (- theta)) scaled-curve)))))))

@@ -8,7 +8,7 @@
     }}$$
   }
 
-\input  /zu/6001-devel/6001mac
+\input{6001mac}
 %\input 6001mac
 
 \begin{document}
@@ -24,7 +24,7 @@ Tutorial preparation for: Week of October 4\\
 \smallskip
 Written solutions due: Friday, October 8 in Recitation \\
 \smallskip
-Reading: 
+Reading:
 \begin{tightlist}
 \item Course notes: finish section 2.2
 \item code files {\tt hend.scm} and {\tt hutils.scm} (attached to this handout)
@@ -54,7 +54,7 @@ Coore.}
 A picture of M.C. Escher, and the same picture transformed by the
 square-limit process.}}
 \label{escher}
-\end{figure} 
+\end{figure}
 
 Section 1 of this handout reviews the language, as presented in
 lecture.  You will need to study this in order to prepare the
@@ -130,10 +130,10 @@ frame and its associated vectors.
 \caption{{\protect\footnotesize A frame is represented by an origin
 and two edge vectors.}}
 \label{frames}
-\end{figure} 
+\end{figure}
 
 Each frame determines a system of ``frame coordinates'' $(x,y)$ where
-$(0,0)$ is the origin of the frame, $x$ represents the displacement 
+$(0,0)$ is the origin of the frame, $x$ represents the displacement
 along the first edge (as a fraction of the length of the edge) and $y$ is the
 displacement along the second edge.  For example, the origin of the
 frame has frame coordinates $(0,0)$ and the vertex diagonally opposite
@@ -146,7 +146,7 @@ point.  That is, $(x,y)$ gets mapped onto the Cartesian
 coordinates of the point given by the vector sum
 \begin{displaymath}
 \hbox{\rm Origin(Frame)} + x\cdot \hbox{\rm Edge}_1\hbox{\rm (Frame)}
-+ y\cdot \hbox{\rm Edge}_2\hbox{\rm (Frame)} 
++ y\cdot \hbox{\rm Edge}_2\hbox{\rm (Frame)}
 \end{displaymath}
 
 We can represent the frame coordinate map by the following procedure:\\
@@ -260,14 +260,14 @@ or instance:
 
 \noindent
 will paint an image of William Barton Rogers, the {\sc fovnder} of MIT.
-(See figure~\ref{primitive-painters}.) 
+(See figure~\ref{primitive-painters}.)
 
 \begin{figure}
 \picture 3.89 in by 1.82 in (primpics)
 \caption{{\protect\footnotesize
 Examples of primitive painters: {\tt mark-of-zorro} and {\tt fovnder}.}}
 \label{primitive-painters}
-\end{figure} 
+\end{figure}
 
 \subsection{Transforming and combining painters}
 
@@ -516,7 +516,7 @@ your procedure.
 (a) The ``diamond of a frame is formed by joining the midpoints
 of the sides.  (b) Painting created by {\tt (diamond fovnder)}.}}
 \label{diamond}
-\end{figure} 
+\end{figure}
 
 \paragraph{Lab exercise 4}
 
@@ -555,7 +555,7 @@ painter2)} produces {\tt painter1} below {\tt painter2}.)
 The {\tt up-split} procedure places a picture below two (recursively)
 up-split copies of itself.}}
 \label{up-split}
-\end{figure} 
+\end{figure}
 
 
 \paragraph{Lab exercise 6}
@@ -616,13 +616,13 @@ and one or two sample pictures.
           (square-limit (below p1 p2) 2))))             (below (beside p1
                                                                        fovnder)
                                                                (beside p2 p2)))))
-\null                                                      
+\null
      (new-comb mark-of-zorro 2)                     (mix-with-fovnder romana 3)
 \endlisp
 \caption{{\protect\footnotesize
 Some recursive combination schemes, defined with {\tt keep-combining}.}}
 \label{keep-combining}
-\end{figure} 
+\end{figure}
 
 \paragraph{Lab exercise 8}
 Define the {\tt square-limit} transformation illustrated in
@@ -660,4 +660,3 @@ generated them.
 
 
 \end{document}
-

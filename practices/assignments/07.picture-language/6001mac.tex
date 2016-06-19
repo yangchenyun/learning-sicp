@@ -1,0 +1,200 @@
+% Latex Macro package for 6.001
+% done by Nikhil, November, 1988
+% updated by Hal, spring 1988
+% updated by Arthur, fall 1989
+
+\documentstyle[11pt]{article}
+
+\pagestyle{myheadings}
+
+% ALIGN EVEN- AND ODD-NUMBERED PAGES.
+\evensidemargin 35pt
+
+% NO NUMBERING ON SECTIONS
+\setcounter{secnumdepth}{0}
+
+% HORIZONTAL MARGINS
+% Left margin 1 inch (0 + 1)
+\setlength{\oddsidemargin}{0in}
+% Text width 6.5 inch (so right margin 1 inch).
+\setlength{\textwidth}{6.5in}
+
+% ----------------
+% VERTICAL MARGINS
+% Top margin 0.5 inch (-0.5 + 1)
+\setlength{\topmargin}{-0.5in}
+% Head height 0.25 inch (where page headers go)
+\setlength{\headheight}{0.25in}
+% Head separation 0.25 inch (between header and top line of text)
+\setlength{\headsep}{0.25in}
+% Text height 8.5 inch (so bottom margin 1.5 in)
+\setlength{\textheight}{8.5in}
+
+% ----------------
+% PARAGRAPH INDENTATION
+\setlength{\parindent}{0in}
+
+% SPACE BETWEEN PARAGRAPHS
+\setlength{\parskip}{\medskipamount}
+
+% ----------------
+% EVALUATION SYMBOL
+\newcommand{\evalsto}{$\Longrightarrow$}
+
+% ----------------
+% STRUTS
+% HORIZONTAL STRUT.  One argument (width).
+\newcommand{\hstrut}[1]{\hspace*{#1}}
+% VERTICAL STRUT. Two arguments (offset from baseline, height).
+\newcommand{\vstrut}[2]{\rule[#1]{0in}{#2}}
+
+% ----------------
+% EMPTY BOXES OF VARIOUS WIDTHS, FOR INDENTATION
+\newcommand{\hm}{\hspace*{1em}}
+\newcommand{\hmm}{\hspace*{2em}}
+\newcommand{\hmmm}{\hspace*{3em}}
+\newcommand{\hmmmm}{\hspace*{4em}}
+
+% ----------------
+% VARIOUS CONVENIENT WIDTHS RELATIVE TO THE TEXT WIDTH, FOR BOXES.
+\newlength{\hlessmm}
+\setlength{\hlessmm}{\textwidth}
+\addtolength{\hlessmm}{-2em}
+
+\newlength{\hlessmmmm}
+\setlength{\hlessmmmm}{\textwidth}
+\addtolength{\hlessmmmm}{-4em}
+
+% ----------------
+% ``TIGHTLIST'' ENVIRONMENT (no para space between items, small indent)
+\newenvironment{tightlist}%
+{\begin{list}{$\bullet$}{%
+    \setlength{\topsep}{0in}
+    \setlength{\partopsep}{0in}
+    \setlength{\itemsep}{0in}
+    \setlength{\parsep}{0in}
+    \setlength{\leftmargin}{1.5em}
+    \setlength{\rightmargin}{0in}
+    \setlength{\itemindent}{0in}
+}
+}%
+{\end{list}
+}
+
+% ----------------
+% CODE FONT (e.g. {\cf x := 0}).
+\newcommand{\cf}{\footnotesize\tt}
+
+% ----------------
+% INSTRUCTION POINTER
+\newcommand{\IP}{$\bullet$}
+\newcommand{\goesto}{$\longrightarrow$}
+
+% ----------------------------------------------------------------
+% LISP CODE DISPLAYS.
+% Lisp code displays are enclosed between \bid and \eid.
+% Most characters are taken verbatim, in typewriter font,
+% Except:
+%  Commands are still available (beginning with \)
+%  Math mode is still available (beginning with $)
+
+\outer\def\beginlisp{%
+  \begin{minipage}[t]{\linewidth}
+  \begin{list}{$\bullet$}{%
+    \setlength{\topsep}{0in}
+    \setlength{\partopsep}{0in}
+    \setlength{\itemsep}{0in}
+    \setlength{\parsep}{0in}
+    \setlength{\leftmargin}{1.5em}
+    \setlength{\rightmargin}{0in}
+    \setlength{\itemindent}{0in}
+  }\item[]
+  \obeyspaces
+  \obeylines \footnotesize\tt}
+
+\outer\def\endlisp{%
+  \end{list}
+  \end{minipage}
+  }
+
+{\obeyspaces\gdef {\ }}
+
+% ----------------
+% ILLUSTRATIONS
+% This command should specify a NEWT directory for ps files for illustrations.
+\def\psfileprefix{/usr/nikhil/parle/}
+\def\illustration#1#2{
+\vbox to #2{\vfill\special{psfile=\psfileprefix#1.ps hoffset=-72 voffset=-45}}} 
+
+% \illuswidth is used to set up boxes around illustrations.
+\newlength{\illuswidth}
+\setlength{\illuswidth}{\textwidth}
+\addtolength{\illuswidth}{-7pt}
+
+% ----------------------------------------------------------------
+% SCHEME CLOSURES AND PROCEDURES
+
+% CLOSURES: TWO CIRCLES BESIDE EACH OTHER; LEFT ONE POINTS DOWN TO CODE (arg 1)
+% RIGHT ONE POINTS RIGHT TO ENVIRONMENT (arg 2)
+\newcommand{\closure}[2]{%
+\begin{tabular}[t]{l}
+\raisebox{-1.5ex}{%
+  \setlength{\unitlength}{0.2ex}
+  \begin{picture}(25,15)(0,-7)
+   \put( 5,5){\circle{10}}
+   \put( 5,5){\circle*{1}}
+   \put( 5,5){\vector(0,-1){10}}
+   \put(15,5){\circle{10}}
+   \put(15,5){\circle*{1}}
+   \put(15,5){\vector(1,0){12}}
+  \end{picture}}
+  \fbox{\footnotesize #2} \\
+%
+\hspace*{0.8ex} \fbox{\footnotesize #1}
+\end{tabular}
+}
+
+% PROCEDURES: BOX CONTAINING PARAMETERS (arg 1) AND BODY (arg 2)
+\newcommand{\proc}[2]{%
+\begin{tabular}{l}
+params: #1 \\
+body: #2 \\
+\end{tabular}
+}
+
+% PROBLEM SET HEADER -- args are semester and problem set or solution
+% example: \psetheader{Spring Semester, 1989}{Problem set 1}
+\newcommand{\psetheader}[2]{%
+\markright{6.001, #1---#2}
+\begin{center}
+MASSACHVSETTS INSTITVTE OF TECHNOLOGY \\
+Department of Electrical Engineering and Computer Science \\
+6.001---Structure and Interpretation of Computer Programs \\
+#1 \\
+\medskip
+{\bf #2}
+\end{center}
+}
+
+% PROBLEM HEADER
+\newcommand{\problem}[1]{{\bf #1}}
+
+% KEYS
+\newcommand{\key}[1]{\fbox{{\sc #1}}}
+\newcommand{\ctrl}{\key{ctrl}--}
+\newcommand{\shift}{\key{shift}--}
+\newcommand{\run}{\key{run} \ }
+\newcommand{\runkey}[1]{\run \key{#1}}
+\newcommand{\extend}{\key{extend} \ }
+\newcommand{\kkey}[1]{\key{k$_{#1}$}}
+
+%% Examples of keys
+%% \key{abort}
+%% \ctrl\key{g}
+%% \extend\key{logout}
+%% \kkey{1}
+%% \shift\kkey{1}
+
+% ----------------------------------------------------------------
+% HERE BEGINS THE DOCUMENT
+% start with \begin{document}

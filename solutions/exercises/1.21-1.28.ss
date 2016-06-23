@@ -1,12 +1,11 @@
-#lang r5rs
-(#%require (only racket/base current-process-milliseconds))
+#lang sicp
+
+(#%require (only racket/base
+                 displayln
+                 current-process-milliseconds))
 (#%require (only math/base random-natural))
 (#%require racket/include)
-(include "../lib/arithmetic.ss")
-
-(define (displayln expr)
-  (display expr)
-  (newline))
+(include "../lib/arithmetic.rkt")
 
 ;; Exercise 1.21
 (define (smallest-divisor n)
@@ -59,33 +58,39 @@
          (benchmark (* floor 10) ceiling))
       ))
 
-;; (benchmark 100000000 10000000000000)
-;; Find the smallest prime larger than 1000000000
-;; 1000000007 is prime, used 1 miliseconds
-;; 1000000009 is prime, used 1 miliseconds
-;; 1000000021 is prime, used 1 miliseconds
-
-;; Find the smallest prime larger than 10000000000
-;; 10000000019 is prime, used 52 miliseconds
-;; 10000000033 is prime, used 70 miliseconds
-;; 10000000061 is prime, used 61 miliseconds
-
+;; (benchmark #e1e11 #e1e16)
 ;; Find the smallest prime larger than 100000000000
-;; 100000000003 is prime, used 186 miliseconds
-;; 100000000019 is prime, used 189 miliseconds
-;; 100000000057 is prime, used 184 miliseconds
+;; 100000000003 is prime, used 8 miliseconds
+;; 100000000019 is prime, used 7 miliseconds
+;; 100000000057 is prime, used 6 miliseconds
 
 ;; Find the smallest prime larger than 1000000000000
-;; 1000000000039 is prime, used 625 miliseconds
-;; 1000000000061 is prime, used 621 miliseconds
-;; 1000000000063 is prime, used 619 miliseconds
+;; 1000000000039 is prime, used 20 miliseconds
+;; 1000000000061 is prime, used 20 miliseconds
+;; 1000000000063 is prime, used 20 miliseconds
 
 ;; Find the smallest prime larger than 10000000000000
-;; 10000000000037 is prime, used 1976 miliseconds
-;; 10000000000051 is prime, used 1985 miliseconds
-;; 10000000000099 is prime, used 1982 miliseconds
+;; 10000000000037 is prime, used 65 miliseconds
+;; 10000000000051 is prime, used 69 miliseconds
+;; 10000000000099 is prime, used 65 miliseconds
 
-;; for input larger than 10000000000, the machine running time is compatible with the algorithms big O
+;; Find the smallest prime larger than 100000000000000
+;; 100000000000031 is prime, used 200 miliseconds
+;; 100000000000067 is prime, used 198 miliseconds
+;; 100000000000097 is prime, used 202 miliseconds
+
+;; Find the smallest prime larger than 1000000000000000
+;; 1000000000000037 is prime, used 630 miliseconds
+;; 1000000000000091 is prime, used 627 miliseconds
+;; 1000000000000159 is prime, used 618 miliseconds
+
+;; Find the smallest prime larger than 10000000000000000
+;; 10000000000000061 is prime, used 1985 miliseconds
+;; 10000000000000069 is prime, used 1991 miliseconds
+;; 10000000000000079 is prime, used 1981 miliseconds
+
+;; for input larger than 1e11, the machine running time is
+;; compatible with the algorithms big O
 
 ;; Exercise 1.23
 
@@ -105,32 +110,37 @@
      (else (find-divisor n (next test-dividor)))))
   (find-divisor n 2))
 
-;; (benchmark 1000000000 10000000000000)
-
-;; Find the smallest prime larger than 1000000000
-;; 1000000007 is prime, used 0 miliseconds
-;; 1000000009 is prime, used 1 miliseconds
-;; 1000000021 is prime, used 1 miliseconds
-
-;; Find the smallest prime larger than 10000000000
-;; 10000000019 is prime, used 27 miliseconds
-;; 10000000033 is prime, used 27 miliseconds
-;; 10000000061 is prime, used 26 miliseconds
+(benchmark #e1e11 #e1e16)
 
 ;; Find the smallest prime larger than 100000000000
-;; 100000000003 is prime, used 103 miliseconds
-;; 100000000019 is prime, used 115 miliseconds
-;; 100000000057 is prime, used 93 miliseconds
+;; 100000000003 is prime, used 5 miliseconds
+;; 100000000019 is prime, used 4 miliseconds
+;; 100000000057 is prime, used 4 miliseconds
 
 ;; Find the smallest prime larger than 1000000000000
-;; 1000000000039 is prime, used 312 miliseconds
-;; 1000000000061 is prime, used 307 miliseconds
-;; 1000000000063 is prime, used 309 miliseconds
+;; 1000000000039 is prime, used 13 miliseconds
+;; 1000000000061 is prime, used 13 miliseconds
+;; 1000000000063 is prime, used 13 miliseconds
 
 ;; Find the smallest prime larger than 10000000000000
-;; 10000000000037 is prime, used 1010 miliseconds
-;; 10000000000051 is prime, used 999 miliseconds
-;; 10000000000099 is prime, used 1003 miliseconds
+;; 10000000000037 is prime, used 45 miliseconds
+;; 10000000000051 is prime, used 45 miliseconds
+;; 10000000000099 is prime, used 41 miliseconds
+
+;; Find the smallest prime larger than 100000000000000
+;; 100000000000031 is prime, used 132 miliseconds
+;; 100000000000067 is prime, used 130 miliseconds
+;; 100000000000097 is prime, used 130 miliseconds
+
+;; Find the smallest prime larger than 1000000000000000
+;; 1000000000000037 is prime, used 428 miliseconds
+;; 1000000000000091 is prime, used 424 miliseconds
+;; 1000000000000159 is prime, used 418 miliseconds
+
+;; Find the smallest prime larger than 10000000000000000
+;; 10000000000000061 is prime, used 1358 miliseconds
+;; 10000000000000069 is prime, used 1360 miliseconds
+;; 10000000000000079 is prime, used 1350 miliseconds
 
 ;; Exercise 1.24
 
@@ -164,32 +174,11 @@
     (if result (report-result n (- end start)) 'nil)
     result))
 
-(benchmark 1000000000 10000000000000)
+(benchmark #e1e90 #e1e100)
 
-;; Find the smallest prime larger than 1000000000
-;; 1000000007 is prime, used 2 miliseconds
-;; 1000000009 is prime, used 0 miliseconds
-;; 1000000021 is prime, used 0 miliseconds
-
-;; Find the smallest prime larger than 10000000000
-;; 10000000019 is prime, used 1 miliseconds
-;; 10000000033 is prime, used 1 miliseconds
-;; 10000000061 is prime, used 2 miliseconds
-
-;; Find the smallest prime larger than 100000000000
-;; 100000000003 is prime, used 0 miliseconds
-;; 100000000019 is prime, used 1 miliseconds
-;; 100000000057 is prime, used 0 miliseconds
-
-;; Find the smallest prime larger than 1000000000000
-;; 1000000000039 is prime, used 1 miliseconds
-;; 1000000000061 is prime, used 0 miliseconds
-;; 1000000000063 is prime, used 0 miliseconds
-
-;; Find the smallest prime larger than 10000000000000
-;; 10000000000037 is prime, used 0 miliseconds
-;; 10000000000051 is prime, used 1 miliseconds
-;; 10000000000099 is prime, used 0 miliseconds
+;; The improvement is fundamental, now it is less then 1m to calculate
+;; input larger than 1e100, the machine running time is compatible
+;; with the algorithms big O
 
 ;; Exercise 1.25
 

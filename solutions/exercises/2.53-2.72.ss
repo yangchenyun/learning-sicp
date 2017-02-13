@@ -1,4 +1,7 @@
-#lang r5rs
+#lang sicp
+
+(define (make-set l) l)
+
 (define (memq? item x)
   (cond ((null? x) #f)
         ((eq? item (car x)) x)

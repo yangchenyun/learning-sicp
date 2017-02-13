@@ -1,6 +1,7 @@
-#lang r5rs
+#lang sicp
+
 (#%require racket/include)
-(include "../lib/arithmetic.ss")
+(include "../lib/arithmetic.rkt")
 
 ;; Exercise 1.1
 10
@@ -73,7 +74,7 @@
 ;; In an application-order, the operands are first evaluated
 (test 0 (p))
 (test 0 (p))
-...
+;; ...
 ;; In this case (p) results in a infinite evaluation loop
 
 ;; Exercise 1.6
